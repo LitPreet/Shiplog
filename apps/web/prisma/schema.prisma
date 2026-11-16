@@ -1,0 +1,66 @@
+// Shiplog database schema.
+// Run `npm run db:migrate` after changing this file to create a migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// A Project = one customer website that embeds the widget.
+model Project {
+  id             String     @id @default(cuid())
+  name           String
+  // Goes in the <script data-key="..."> tag. It is PUBLIC (anyone can read it
+  // in page source), so it only unlocks low-risk actions: list/submit/vote.
+  publicKey      String     @unique
+  // Browser origins allowed to use this key, e.g. "https://acme.com".
+  allowedOrigins String[]
+  createdAt      DateTime   @default(now())
+  feedback       Feedback[]
+}
+
+enum FeedbackStatus {
+  OPEN
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CLOSED
+}
+
+model Feedback {
+  id          String         @id @default(cuid())
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      FeedbackStatus @default(OPEN)
+  // Denormalized counter: we could COUNT(votes) every time, but sorting the
+  // board by votes is the hottest query, so we keep the number on the row and
+  // update it in the same transaction as the Vote insert/delete.
+  voteCount   Int            @default(0)
+  // Anonymous ID of the end-user who submitted it (generated in the widget).
+  visitorId   String
+  // Page the feedback was submitted from.
+  pageUrl     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  votes       Vote[]
+
+  @@index([projectId, voteCount])
+}
+
+model Vote {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  visitorId  String
+  createdAt  DateTime @default(now())
+
+  // One vote per visitor per item, enforced by the database itself
+  // (not just app code), so double-clicks and races can't double count.
+  @@unique([feedbackId, visitorId])
+}
