@@ -1,0 +1,19 @@
+# Local Postgres for development.
+# Port 5433 on your machine -> 5432 in the container, so it won't clash
+# with any Postgres you may already have installed.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: shiplog-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shiplog
+      POSTGRES_PASSWORD: shiplog
+      POSTGRES_DB: shiplog
+    ports:
+      - "5433:5432"
+    volumes:
+      - shiplog-pgdata:/var/lib/postgresql/data
+
+volumes:
+  shiplog-pgdata:
