@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acme Invoices (demo customer site)</title>
+    <style>
+      /* Deliberately aggressive global CSS, like real sites have.
+         Shadow DOM should stop it from leaking into the widget. */
+      * { font-family: Georgia, serif; }
+      button { background: hotpink !important; border-radius: 0; }
+      body { margin: 0; background: #f5f5f0; color: #222; }
+      header { background: #1f2937; color: white; padding: 16px 32px; font-size: 20px; }
+      main { max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    <header>Acme Invoices</header>
+    <main>
+      <h1>Your invoices</h1>
+      <p>This page pretends to be a customer's SaaS app. The only Shiplog code on it is the
+        one &lt;script&gt; tag at the bottom. Click the feedback button in the corner.</p>
+      <p><button>A host-site button (pink on purpose)</button></p>
+    </main>
+
+    <!-- This is exactly what a customer would paste into their site.
+         In dev we load the source; in production it's .../widget.js -->
+    <script
+      type="module"
+      src="/src/main.tsx"
+      data-shiplog-key="pk_demo_123"
+      data-shiplog-api="http://localhost:3000"
+      data-shiplog-color="#4f46e5"
+    ></script>
+  </body>
+</html>
