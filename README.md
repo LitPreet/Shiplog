@@ -98,6 +98,9 @@ npm run dev:web      # dashboard + API   → http://localhost:3000
 npm run dev:widget   # demo customer app → http://localhost:5173
 ```
 
+After changing the widget, run `npm run build:widget`. This writes `apps/web/public/widget.js`
+and the `/demo` page, which are committed so the deployed app serves them.
+
 ### Try it
 
 1. Open **http://localhost:5173**. It's *Acme Invoices*, a demo app with the widget embedded.
@@ -119,6 +122,22 @@ npm run dev:widget   # demo customer app → http://localhost:5173
 1. Sign up, then click **New project** and enter your site's domain.
 2. In **Widget & settings**, copy the snippet and paste it before `</body>`.
 3. Optional: customise the text, colour, theme and questions.
+
+## Deploy (free: Vercel Hobby + Neon)
+
+1. Import the repo in [Vercel](https://vercel.com/new) and set **Root Directory** to `apps/web`.
+2. In the Vercel project, open **Storage → Create → Neon** and connect it. This adds
+   `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+3. Redeploy. The build runs `prisma migrate deploy && next build` (see `apps/web/vercel.json`).
+4. Seed the demo data once, from your machine, using the Neon connection string:
+
+   ```bash
+   cd apps/web
+   DATABASE_URL="<neon url>" DATABASE_URL_UNPOOLED="<neon url>" APP_URL="https://<your-app>.vercel.app" npm run db:seed
+   ```
+
+The demo customer site is served at `/demo`, and the demo account is read-only, so it stays
+intact for the next visitor.
 
 ## How it works
 

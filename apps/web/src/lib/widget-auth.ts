@@ -29,7 +29,14 @@ export async function authenticateWidget(req: Request): Promise<AuthResult> {
     return { ok: false, response: json(req, { error: "This feedback board is paused" }, 403) };
   }
 
-  const origin = req.headers.get("origin");
+  // Browsers omit Origin on same-origin GETs (e.g. the widget on our own /demo
+  // page). Sec-Fetch-Site is also browser-set and unforgeable by page JS, so
+  // "same-origin" means the request came from this app's own origin, which
+  // must still be on the allowlist. (Non-browser clients can fake either
+  // header; that's what the rate limits and low-privilege key are for.)
+  const origin =
+    req.headers.get("origin") ??
+    (req.headers.get("sec-fetch-site") === "same-origin" ? new URL(req.url).origin : null);
   if (!origin || !project.allowedOrigins.includes(origin)) {
     return {
       ok: false,

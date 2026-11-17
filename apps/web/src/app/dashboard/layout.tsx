@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { requireUser } from "@/lib/auth";
+import { isDemoUser } from "@/lib/demo";
 import { logout } from "../(auth)/actions";
 
 export const metadata = { title: "Dashboard" };
@@ -41,6 +42,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </details>
         </div>
       </header>
+      {isDemoUser(user) && (
+        <div className="border-b border-accent/30 bg-accent-soft">
+          <p className="mx-auto max-w-6xl px-4 py-2.5 text-sm sm:px-6">
+            <strong>You&apos;re exploring the read-only demo.</strong> You can change idea statuses; settings are locked.{" "}
+            <Link href="/signup" className="font-semibold underline underline-offset-4">
+              Create a free account
+            </Link>{" "}
+            to set up your own project.
+          </p>
+        </div>
+      )}
       {children}
     </div>
   );

@@ -1,13 +1,11 @@
 // Creates a demo account, a demo project and realistic sample feedback.
 // Run with: npm run db:seed (safe to re-run: existing data is left alone).
 import { PrismaClient, type FeedbackStatus } from "@prisma/client";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "../src/lib/demo";
 import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
 
-// Sign in to the dashboard with these.
-const DEMO_EMAIL = "demo@shiplog.dev";
-const DEMO_PASSWORD = "demo12345";
 
 const PLANS = ["Free", "Pro", "Business"];
 
@@ -25,6 +23,10 @@ const IDEAS: SeedIdea[] = [
   { title: "Crypto payments", votes: 2, daysAgo: 9, status: "CLOSED", plan: "Free" },
 ];
 
+// The widget dev server, plus the deployed app itself (its /demo page embeds
+// the widget). Set APP_URL when seeding production.
+const DEMO_ORIGINS = ["http://localhost:5173", ...(process.env.APP_URL ? [new URL(process.env.APP_URL).origin] : [])];
+
 async function main() {
   const user = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
@@ -34,13 +36,13 @@ async function main() {
 
   const project = await prisma.project.upsert({
     where: { publicKey: "pk_demo_123" },
-    update: {},
+    // Re-running the seed adds any missing demo origins (e.g. after deploying).
+    update: { allowedOrigins: DEMO_ORIGINS },
     create: {
       name: "Acme Invoices",
       ownerId: user.id,
       publicKey: "pk_demo_123",
-      // The widget's dev server (the demo "customer website").
-      allowedOrigins: ["http://localhost:5173"],
+      allowedOrigins: DEMO_ORIGINS,
       widgetTitle: "Help shape Acme Invoices",
       widgetSubtitle: "Vote on ideas or suggest your own.",
       accentColor: "#4338ca",

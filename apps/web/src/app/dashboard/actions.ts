@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { DEMO_READ_ONLY, isDemoUser } from "@/lib/demo";
 import { MAX_PROJECTS } from "@/lib/limits";
 import { generatePublicKey, normalizeOrigin } from "@/lib/origins";
 
@@ -17,6 +18,7 @@ const schema = z.object({
 
 export async function createProject(_prev: CreateProjectState, form: FormData): Promise<CreateProjectState> {
   const user = await requireUser();
+  if (isDemoUser(user)) return { error: DEMO_READ_ONLY.error };
 
   const parsed = schema.safeParse({ name: form.get("name"), origin: form.get("origin") ?? "" });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };

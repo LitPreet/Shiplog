@@ -40,6 +40,9 @@ export default async function Home() {
             <a href="#features" className="hidden rounded-md px-3 py-2 text-muted transition hover:text-foreground sm:block">
               Features
             </a>
+            <a href="/demo" className="hidden rounded-md px-3 py-2 text-muted transition hover:text-foreground sm:block">
+              Live demo
+            </a>
             {user ? (
               <Link
                 href="/dashboard"
@@ -98,7 +101,11 @@ export default async function Home() {
               </a>
             </div>
             <p className="mt-6 text-sm text-muted">
-              <span className="font-medium text-foreground">Try it →</span> the widget on the right is live. Vote, suggest, switch colours.
+              <span className="font-medium text-foreground">Try it →</span> the widget on the right is live. Or open the{" "}
+              <a href="/demo" className="font-medium text-foreground underline underline-offset-4">
+                full demo app
+              </a>
+              .
             </p>
           </div>
 

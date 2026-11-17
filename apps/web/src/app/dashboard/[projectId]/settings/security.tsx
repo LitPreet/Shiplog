@@ -5,6 +5,12 @@ import { CopyButton } from "@/components/copy-button";
 import { Globe, Plus, X } from "@/components/icons";
 import { addOrigin, deleteProject, removeOrigin, renameProject, rotateKey, setActive } from "../actions";
 
+// Actions return { ok: false, error } instead of throwing (e.g. demo account).
+async function run(action: () => Promise<{ ok: boolean; error?: string }>) {
+  const res = await action();
+  if (!res.ok && res.error) alert(res.error);
+}
+
 const card = "rounded-2xl border border-border bg-card p-5";
 const input =
   "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15";
@@ -29,7 +35,7 @@ export function OriginsCard({ projectId, origins, max }: { projectId: string; or
               type="button"
               disabled={removing}
               aria-label={`Remove ${o}`}
-              onClick={() => startTransition(() => removeOrigin(projectId, o))}
+              onClick={() => startTransition(() => run(() => removeOrigin(projectId, o)))}
               className="text-muted transition hover:text-red-600"
             >
               <X />
@@ -70,7 +76,7 @@ export function KeyCard({ projectId, publicKey }: { projectId: string; publicKey
         disabled={pending}
         onClick={() => {
           if (confirm("Rotate the key? The widget stops working until you paste the new snippet.")) {
-            startTransition(() => rotateKey(projectId));
+            startTransition(() => run(() => rotateKey(projectId)));
           }
         }}
         className={`${btn} mt-3`}
@@ -112,7 +118,7 @@ export function GeneralSettings({ projectId, name, isActive }: { projectId: stri
           aria-checked={isActive}
           aria-label="Widget live"
           disabled={toggling}
-          onClick={() => startTransition(() => setActive(projectId, !isActive))}
+          onClick={() => startTransition(() => run(() => setActive(projectId, !isActive)))}
           className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-60 ${isActive ? "bg-done" : "bg-border"}`}
         >
           <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${isActive ? "left-[22px]" : "left-0.5"}`} />
@@ -137,7 +143,7 @@ export function DangerZone({ projectId, name }: { projectId: string; name: strin
         <button
           type="button"
           disabled={confirmText !== name || pending}
-          onClick={() => startTransition(() => deleteProject(projectId))}
+          onClick={() => startTransition(() => run(() => deleteProject(projectId)))}
           className="rounded-xl bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-40"
         >
           {pending ? "Deleting…" : "Delete project"}

@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoices · Acme Invoices</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!--
+      Fake "customer" app for local development. Its only Shiplog code is the
+      <script> tag at the bottom. It deliberately ships opinionated global CSS
+      (uppercase buttons, a global reset), and the "Stress test" switch adds
+      truly hostile CSS. The widget lives in a Shadow DOM, so none of it leaks in.
+    -->
+    <style>
+      :root {
+        --ink: #0f172a;
+        --ink-2: #334155;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --brand: #4338ca;
+        --brand-soft: #eef2ff;
+        --paid: #15803d;
+        --paid-bg: #dcfce7;
+        --pending: #b45309;
+        --pending-bg: #fef3c7;
+        --overdue: #b91c1c;
+        --overdue-bg: #fee2e2;
+        --draft: #475569;
+        --draft-bg: #f1f5f9;
+      }
+
+      /* A typical app-wide reset + house style. Note the global button rule:
+         exactly the kind of thing that breaks naive embedded widgets. */
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--ink);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+      ul { list-style: none; }
+      a { color: inherit; text-decoration: none; }
+      button {
+        font: inherit;
+        cursor: pointer;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      table { border-collapse: collapse; width: 100%; }
+
+      /* ---------- Layout ---------- */
+      .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100%; }
+      .sidebar {
+        position: sticky; top: 0; height: 100vh;
+        display: flex; flex-direction: column; gap: 24px;
+        padding: 20px 14px;
+        background: var(--ink); color: #cbd5e1;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; color: #fff; font-weight: 700; font-size: 16px; }
+      .brand-mark {
+        display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
+        background: linear-gradient(135deg, #6366f1, #4338ca); font-size: 15px;
+      }
+      .nav-label { padding: 0 10px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+      .nav a {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 10px; border-radius: 8px; font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+      }
+      .nav a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+      .nav a.active { background: rgba(99, 102, 241, 0.18); color: #fff; }
+      .nav svg { width: 17px; height: 17px; flex: none; opacity: 0.85; }
+      .nav .count { margin-left: auto; font-size: 11px; background: #ef4444; color: #fff; border-radius: 999px; padding: 0 7px; }
+      .sidebar-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); }
+      .avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: #f59e0b; color: #fff; font-weight: 700; font-size: 13px; flex: none; }
+      .sidebar-foot small { display: block; color: #94a3b8; font-size: 12px; }
+      .sidebar-foot strong { color: #fff; font-weight: 600; }
+
+      .main { min-width: 0; }
+      .topbar {
+        position: sticky; top: 0; z-index: 5;
+        display: flex; align-items: center; gap: 16px;
+        height: 60px; padding: 0 32px;
+        background: rgba(248, 250, 252, 0.85); backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      .search {
+        display: flex; align-items: center; gap: 8px; flex: 1; max-width: 420px;
+        padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted);
+      }
+      .search input { border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); width: 100%; }
+      .search kbd { font: 11px/1 ui-monospace, monospace; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; }
+      .topbar .spacer { flex: 1; }
+      .icon-btn { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink-2); position: relative; }
+      .icon-btn .dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 999px; background: #ef4444; border: 2px solid var(--card); }
+
+      .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+      .btn:hover { border-color: #cbd5e1; }
+      .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 6px 16px -6px rgba(67, 56, 202, 0.6); }
+      .btn.primary:hover { background: #3730a3; }
+
+      .content { padding: 28px 32px 64px; max-width: 1200px; }
+      .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+      .page-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+      .page-head p { color: var(--muted); margin-top: 2px; }
+      .actions { display: flex; gap: 8px; }
+
+      /* ---------- Feedback banner (opens the Shiplog widget) ---------- */
+      .announce {
+        display: flex; align-items: center; gap: 14px; margin-top: 22px;
+        padding: 14px 16px; border-radius: 14px;
+        background: linear-gradient(90deg, var(--brand-soft), #fff);
+        border: 1px solid #c7d2fe;
+      }
+      .announce .badge { padding: 3px 8px; border-radius: 999px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 600; }
+      .announce p { flex: 1; color: var(--ink-2); }
+      .announce p strong { color: var(--ink); }
+      .link-btn { background: none; border: 0; color: var(--brand); padding: 6px 4px; }
+      .link-btn:hover { text-decoration: underline; }
+
+      /* ---------- KPIs ---------- */
+      .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+      .kpi { padding: 18px; }
+      .kpi .label { color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+      .kpi .label i { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+      .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .kpi .delta { font-size: 12px; margin-top: 4px; color: var(--muted); }
+      .up { color: var(--paid); font-weight: 600; }
+      .down { color: var(--overdue); font-weight: 600; }
+
+      /* ---------- Chart + aging ---------- */
+      .split { display: grid; grid-template-columns: 1.7fr 1fr; gap: 14px; margin-top: 14px; }
+      .panel { padding: 18px 20px; }
+      .panel-head { display: flex; align-items: baseline; justify-content: space-between; }
+      .panel-head h2 { font-size: 15px; font-weight: 600; }
+      .panel-head span { color: var(--muted); font-size: 12px; }
+      .bars { display: flex; align-items: flex-end; gap: 14px; height: 170px; margin-top: 18px; padding-bottom: 22px; position: relative; }
+      .bars::before { content: ""; position: absolute; inset: 0 0 22px; background: repeating-linear-gradient(to top, var(--line) 0 1px, transparent 1px 42px); }
+      .bar { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+      .bar .fill { border-radius: 6px 6px 2px 2px; background: #c7d2fe; transition: background 0.15s; }
+      .bar.current .fill { background: var(--brand); }
+      .bar:hover .fill { background: #818cf8; }
+      .bar .tip { position: absolute; left: 50%; transform: translateX(-50%); top: -6px; font-size: 11px; font-weight: 600; color: var(--ink-2); opacity: 0; transition: opacity 0.15s; white-space: nowrap; }
+      .bar:hover .tip, .bar.current .tip { opacity: 1; }
+      .bar .m { position: absolute; bottom: -22px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
+      .aging li { display: grid; grid-template-columns: 90px 1fr 70px; align-items: center; gap: 10px; padding: 9px 0; }
+      .aging li + li { border-top: 1px dashed var(--line); }
+      .aging .track { height: 8px; border-radius: 999px; background: var(--draft-bg); overflow: hidden; }
+      .aging .track span { display: block; height: 100%; border-radius: 999px; }
+      .aging .amt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .aging .lbl { color: var(--ink-2); }
+
+      /* ---------- Invoices table ---------- */
+      .table-card { margin-top: 14px; overflow: hidden; }
+      .table-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      .tabs { display: flex; gap: 4px; padding: 3px; background: var(--draft-bg); border-radius: 10px; }
+      .tabs button { border: 0; background: transparent; color: var(--muted); padding: 6px 10px; border-radius: 8px; }
+      .tabs button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08); }
+      .tabs .n { margin-left: 4px; color: var(--muted); font-weight: 500; }
+      .mini-search { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); }
+      .mini-search input { border: 0; outline: 0; font: inherit; width: 180px; color: var(--ink); }
+      th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 16px; background: #fbfcfe; border-bottom: 1px solid var(--line); }
+      td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      tbody tr { transition: background 0.12s; }
+      tbody tr:hover { background: #f8fafc; }
+      tbody tr:last-child td { border-bottom: 0; }
+      .num { text-align: right; font-variant-numeric: tabular-nums; }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; color: var(--ink-2); }
+      .cust { display: flex; align-items: center; gap: 10px; }
+      .logo { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: #fff; font-weight: 700; font-size: 12px; flex: none; }
+      .cust small { display: block; color: var(--muted); font-size: 12px; }
+      .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .pill::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+      .pill.paid { color: var(--paid); background: var(--paid-bg); }
+      .pill.pending { color: var(--pending); background: var(--pending-bg); }
+      .pill.overdue { color: var(--overdue); background: var(--overdue-bg); }
+      .pill.draft { color: var(--draft); background: var(--draft-bg); }
+      .row-btn { border: 1px solid var(--line); background: var(--card); color: var(--ink-2); padding: 5px 9px; border-radius: 8px; font-size: 11px; }
+      .row-btn:hover { border-color: #cbd5e1; color: var(--ink); }
+      .empty { padding: 40px; text-align: center; color: var(--muted); }
+      .table-foot { display: flex; justify-content: space-between; padding: 12px 16px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+
+      /* ---------- Demo notes (for whoever is presenting) ---------- */
+      .demo { margin-top: 28px; padding: 16px 18px; border: 1px dashed #cbd5e1; border-radius: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; color: var(--ink-2); }
+      .demo strong { color: var(--ink); }
+      .demo code { font: 12px ui-monospace, monospace; background: var(--draft-bg); padding: 2px 6px; border-radius: 5px; }
+      .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-weight: 600; }
+      /* Visually hidden but still focusable + announced (not display:none). */
+      .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+      .switch input:focus-visible + .track { outline: 2px solid var(--brand); outline-offset: 2px; }
+      .switch .track { width: 40px; height: 22px; border-radius: 999px; background: #cbd5e1; position: relative; transition: background 0.2s; }
+      .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 999px; background: #fff; transition: left 0.2s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+      .switch input:checked + .track { background: #db2777; }
+      .switch input:checked + .track::after { left: 21px; }
+
+      /* Stress test: the worst CSS a host page could ship. If Shadow DOM
+         isolation works, the Shiplog widget looks exactly the same. */
+      body.hostile * { font-family: Georgia, "Times New Roman", serif !important; }
+      body.hostile button { background: hotpink !important; color: #000 !important; border-radius: 0 !important; border: 3px dashed #000 !important; }
+      body.hostile input, body.hostile select, body.hostile textarea { border: 3px solid lime !important; background: yellow !important; }
+      body.hostile div, body.hostile section, body.hostile li { line-height: 2.4 !important; }
+      body.hostile .card { transform: rotate(-0.6deg); }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .split { grid-template-columns: 1fr; } }
+      @media (max-width: 820px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        .topbar, .content { padding-left: 16px; padding-right: 16px; }
+        .search kbd, .hide-sm { display: none; }
+        .table-scroll { overflow-x: auto; }
+        table { min-width: 680px; }
+      }
+      @media (max-width: 520px) { .kpis { grid-template-columns: 1fr; } .announce { flex-wrap: wrap; } }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">A</span> Acme Invoices</div>
+        <nav>
+          <div class="nav-label">Billing</div>
+          <ul class="nav">
+            <li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-8 9 8M5 10v10h14V10"/></svg>Overview</a></li>
+            <li><a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Invoices <span class="count">3</span></a></li>
+            <li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M16 4a4 4 0 0 1 0 8M22 21c0-3-2-6-5-7"/></svg>Customers</a></li>
+            <li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</a></li>
+            <li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a></li>
+          </ul>
+        </nav>
+        <nav>
+          <div class="nav-label">Workspace</div>
+          <ul class="nav">
+            <li><a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a></li>
+            <li><a href="#" data-open-feedback><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Send feedback</a></li>
+          </ul>
+        </nav>
+        <div class="sidebar-foot">
+          <span class="avatar">JR</span>
+          <div><strong>Jordan Rivera</strong><small>Finance · Pro plan</small></div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <!-- Top bar -->
+        <header class="topbar">
+          <label class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input placeholder="Search invoices, customers…" aria-label="Search" />
+            <kbd>⌘K</kbd>
+          </label>
+          <span class="spacer"></span>
+          <button class="icon-btn" aria-label="Notifications">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="dot"></span>
+          </button>
+          <button class="btn primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New invoice
+          </button>
+        </header>
+
+        <main class="content">
+          <div class="page-head">
+            <div>
+              <h1>Invoices</h1>
+              <p>November 2026 · 128 invoices across 42 customers</p>
+            </div>
+            <div class="actions">
+              <button class="btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+                Export
+              </button>
+              <button class="btn hide-sm">Send reminders</button>
+            </div>
+          </div>
+
+          <div class="announce">
+            <span class="badge">New</span>
+            <p><strong>Help shape Acme.</strong> Vote on what we build next, or suggest your own idea. It takes 10 seconds.</p>
+            <button class="link-btn" data-open-feedback>Share feedback →</button>
+          </div>
+
+          <!-- KPIs -->
+          <section class="kpis">
+            <div class="card kpi">
+              <div class="label"><i style="background: var(--brand)"></i>Outstanding</div>
+              <div class="value">$48,210</div>
+              <div class="delta"><span class="up">↑ 8.2%</span> vs last month</div>
+            </div>
+            <div class="card kpi">
+              <div class="label"><i style="background: var(--overdue)"></i>Overdue</div>
+              <div class="value">$6,430</div>
+              <div class="delta"><span class="down">3 invoices</span> need attention</div>
+            </div>
+            <div class="card kpi">
+              <div class="label"><i style="background: var(--paid)"></i>Paid this month</div>
+              <div class="value">$92,870</div>
+              <div class="delta"><span class="up">↑ 12.4%</span> vs October</div>
+            </div>
+            <div class="card kpi">
+              <div class="label"><i style="background: var(--pending)"></i>Avg. days to pay</div>
+              <div class="value">18 days</div>
+              <div class="delta"><span class="up">↓ 3 days</span> faster than Q3</div>
+            </div>
+          </section>
+
+          <!-- Chart + aging -->
+          <section class="split">
+            <div class="card panel">
+              <div class="panel-head"><h2>Collected revenue</h2><span>Last 6 months</span></div>
+              <div class="bars" id="bars"></div>
+            </div>
+            <div class="card panel">
+              <div class="panel-head"><h2>Receivables aging</h2><span>$54,640 open</span></div>
+              <ul class="aging" style="margin-top: 10px">
+                <li><span class="lbl">Current</span><span class="track"><span style="width: 72%; background: var(--paid)"></span></span><span class="amt">$31,920</span></li>
+                <li><span class="lbl">1–30 days</span><span class="track"><span style="width: 38%; background: var(--brand)"></span></span><span class="amt">$16,290</span></li>
+                <li><span class="lbl">31–60 days</span><span class="track"><span style="width: 14%; background: var(--pending)"></span></span><span class="amt">$4,210</span></li>
+                <li><span class="lbl">60+ days</span><span class="track"><span style="width: 6%; background: var(--overdue)"></span></span><span class="amt">$2,220</span></li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- Invoices -->
+          <section class="card table-card">
+            <div class="table-tools">
+              <div class="tabs" role="tablist" id="tabs"></div>
+              <label class="mini-search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="q" placeholder="Filter by customer or #" aria-label="Filter invoices" />
+              </label>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>Invoice</th><th>Customer</th><th>Issued</th><th>Due</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+            <div class="table-foot"><span id="summary"></span><span>Page 1 of 1</span></div>
+          </section>
+
+          <!-- Presenter notes -->
+          <div class="demo">
+            <div>
+              <strong>Demo customer site for Shiplog.</strong>
+              The only Shiplog code here is one <code>&lt;script&gt;</code> tag. Turn on the stress test: this page gets
+              hostile global CSS (<code>* { font-family: Georgia }</code>, pink buttons, neon inputs), and the widget stays untouched thanks to Shadow DOM.
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="hostile" />
+              <span class="track"></span>
+              Stress test
+            </label>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      // --- Sample data (fake) ---
+      const MONTHS = [["Jun", 61], ["Jul", 68], ["Aug", 64], ["Sep", 77], ["Oct", 82], ["Nov", 93]];
+      const COLORS = ["#0ea5e9", "#f97316", "#10b981", "#8b5cf6", "#e11d48", "#14b8a6", "#f59e0b", "#6366f1"];
+      const INVOICES = [
+        { id: "INV-2041", customer: "Northwind Traders", email: "ap@northwind.io", issued: "Nov 14", due: "Dec 14", amount: 12480, status: "pending" },
+        { id: "INV-2040", customer: "Globex Corporation", email: "billing@globex.com", issued: "Nov 12", due: "Nov 26", amount: 4320, status: "paid" },
+        { id: "INV-2039", customer: "Initech", email: "finance@initech.co", issued: "Oct 28", due: "Nov 11", amount: 2890, status: "overdue" },
+        { id: "INV-2038", customer: "Umbrella Health", email: "ap@umbrella.health", issued: "Oct 25", due: "Nov 24", amount: 18750, status: "pending" },
+        { id: "INV-2037", customer: "Stark Logistics", email: "pay@starklog.com", issued: "Oct 20", due: "Nov 03", amount: 1960, status: "overdue" },
+        { id: "INV-2036", customer: "Hooli", email: "vendors@hooli.xyz", issued: "Oct 18", due: "Nov 17", amount: 9600, status: "paid" },
+        { id: "INV-2035", customer: "Wayne Studios", email: "accounts@wayne.studio", issued: "Oct 15", due: "Oct 29", amount: 1580, status: "overdue" },
+        { id: "INV-2034", customer: "Soylent Foods", email: "ap@soylent.food", issued: "—", due: "—", amount: 3200, status: "draft" },
+        { id: "INV-2033", customer: "Pied Piper", email: "hello@piedpiper.com", issued: "Oct 09", due: "Nov 08", amount: 7450, status: "paid" },
+      ];
+      const LABEL = { paid: "Paid", pending: "Pending", overdue: "Overdue", draft: "Draft" };
+      const money = (n) => "$" + n.toLocaleString("en-US");
+
+      // --- Chart ---
+      const max = Math.max(...MONTHS.map((m) => m[1]));
+      document.getElementById("bars").innerHTML = MONTHS.map(([m, v], i) => `
+        <div class="bar ${i === MONTHS.length - 1 ? "current" : ""}">
+          <span class="tip">$${v}k</span>
+          <div class="fill" style="height:${(v / max) * 86}%"></div>
+          <span class="m">${m}</span>
+        </div>`).join("");
+
+      // --- Table with status tabs + search ---
+      let tab = "all";
+      const tabsEl = document.getElementById("tabs");
+      const q = document.getElementById("q");
+
+      function renderTabs() {
+        const tabs = ["all", "paid", "pending", "overdue", "draft"];
+        tabsEl.innerHTML = tabs.map((t) => {
+          const n = t === "all" ? INVOICES.length : INVOICES.filter((i) => i.status === t).length;
+          return `<button role="tab" aria-selected="${t === tab}" class="${t === tab ? "on" : ""}" data-tab="${t}">${t === "all" ? "All" : LABEL[t]}<span class="n">${n}</span></button>`;
+        }).join("");
+      }
+
+      function renderRows() {
+        const term = q.value.trim().toLowerCase();
+        const list = INVOICES.filter((i) => (tab === "all" || i.status === tab) &&
+          (!term || i.customer.toLowerCase().includes(term) || i.id.toLowerCase().includes(term)));
+        document.getElementById("rows").innerHTML = list.length ? list.map((i) => `
+          <tr>
+            <td class="mono">${i.id}</td>
+            <td><div class="cust"><span class="logo" style="background:${COLORS[INVOICES.indexOf(i) % COLORS.length]}">${i.customer.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span>
+              <div>${i.customer}<small>${i.email}</small></div></div></td>
+            <td>${i.issued}</td>
+            <td>${i.due}</td>
+            <td class="num"><strong>${money(i.amount)}</strong></td>
+            <td><span class="pill ${i.status}">${LABEL[i.status]}</span></td>
+            <td class="num"><button class="row-btn">${i.status === "overdue" ? "Remind" : i.status === "draft" ? "Send" : "View"}</button></td>
+          </tr>`).join("") : `<tr><td colspan="7" class="empty">No invoices match.</td></tr>`;
+        const total = list.reduce((s, i) => s + i.amount, 0);
+        document.getElementById("summary").textContent = `${list.length} invoice${list.length === 1 ? "" : "s"} · ${money(total)}`;
+      }
+
+      tabsEl.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-tab]");
+        if (!b) return;
+        tab = b.dataset.tab;
+        renderTabs();
+        renderRows();
+      });
+      q.addEventListener("input", renderRows);
+      renderTabs();
+      renderRows();
+
+      // --- Open the Shiplog widget from the host page's own buttons ---
+      // The widget's shadow root is "open", so the host can reach its launcher.
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("[data-open-feedback]")) return;
+        e.preventDefault();
+        const launcher = document.getElementById("shiplog-root")?.shadowRoot?.querySelector(".launcher");
+        if (launcher && launcher.getAttribute("aria-expanded") !== "true") launcher.click();
+      });
+
+      // --- Stress test toggle ---
+      document.getElementById("hostile").addEventListener("change", (e) => {
+        document.body.classList.toggle("hostile", e.target.checked);
+      });
+    </script>
+
+    <!-- This is exactly what a customer would paste into their site.
+         Served by Shiplog itself at /demo. -->
+    <script src="/widget.js" data-shiplog-key="pk_demo_123" defer></script>
+  </body>
+</html>

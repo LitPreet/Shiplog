@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireProject } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { DEMO_READ_ONLY, isDemoUser } from "@/lib/demo";
 import { WIDGET_THEMES, formFieldsSchema } from "@/lib/form-fields";
 import { MAX_ORIGINS } from "@/lib/limits";
 import { generatePublicKey, normalizeOrigin } from "@/lib/origins";
@@ -26,10 +27,12 @@ export async function updateStatus(projectId: string, feedbackId: string, status
   refresh(projectId);
 }
 
-export async function deleteFeedback(projectId: string, feedbackId: string) {
-  await requireProject(projectId);
+export async function deleteFeedback(projectId: string, feedbackId: string): Promise<Result> {
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   await db.feedback.deleteMany({ where: { id: feedbackId, projectId } });
   refresh(projectId);
+  return { ok: true };
 }
 
 // ---------- Widget appearance + form ----------
@@ -50,7 +53,8 @@ const widgetSchema = z.object({
 export type WidgetSettings = z.infer<typeof widgetSchema>;
 
 export async function saveWidget(projectId: string, input: WidgetSettings): Promise<Result> {
-  await requireProject(projectId);
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   const parsed = widgetSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid settings" };
   await db.project.update({ where: { id: projectId }, data: parsed.data });
@@ -60,25 +64,29 @@ export async function saveWidget(projectId: string, input: WidgetSettings): Prom
 
 // ---------- General ----------
 
-export async function renameProject(projectId: string, _prev: unknown, form: FormData) {
-  await requireProject(projectId);
+export async function renameProject(projectId: string, _prev: unknown, form: FormData): Promise<Result> {
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   const name = z.string().trim().min(1).max(60).safeParse(form.get("name"));
-  if (!name.success) return { ok: false, error: "Name must be 1–60 characters" } satisfies Result;
+  if (!name.success) return { ok: false, error: "Name must be 1–60 characters" };
   await db.project.update({ where: { id: projectId }, data: { name: name.data } });
   refresh(projectId);
-  return { ok: true } satisfies Result;
+  return { ok: true };
 }
 
-export async function setActive(projectId: string, isActive: boolean) {
-  await requireProject(projectId);
+export async function setActive(projectId: string, isActive: boolean): Promise<Result> {
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   await db.project.update({ where: { id: projectId }, data: { isActive } });
   refresh(projectId);
+  return { ok: true };
 }
 
 // ---------- Security: origins + key ----------
 
 export async function addOrigin(projectId: string, _prev: unknown, form: FormData): Promise<Result> {
-  const { project } = await requireProject(projectId);
+  const { user, project } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   const origin = normalizeOrigin(String(form.get("origin") ?? ""));
   if (!origin) return { ok: false, error: "Enter a domain like acme.com or https://app.acme.com" };
   if (project.allowedOrigins.includes(origin)) return { ok: false, error: `${origin} is already allowed` };
@@ -88,24 +96,29 @@ export async function addOrigin(projectId: string, _prev: unknown, form: FormDat
   return { ok: true };
 }
 
-export async function removeOrigin(projectId: string, origin: string) {
-  const { project } = await requireProject(projectId);
+export async function removeOrigin(projectId: string, origin: string): Promise<Result> {
+  const { user, project } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   await db.project.update({
     where: { id: projectId },
     data: { allowedOrigins: project.allowedOrigins.filter((o) => o !== origin) },
   });
   refresh(projectId);
+  return { ok: true };
 }
 
 // The old key stops working immediately; the owner re-pastes the snippet.
-export async function rotateKey(projectId: string) {
-  await requireProject(projectId);
+export async function rotateKey(projectId: string): Promise<Result> {
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   await db.project.update({ where: { id: projectId }, data: { publicKey: generatePublicKey() } });
   refresh(projectId);
+  return { ok: true };
 }
 
-export async function deleteProject(projectId: string) {
-  await requireProject(projectId);
+export async function deleteProject(projectId: string): Promise<Result> {
+  const { user } = await requireProject(projectId);
+  if (isDemoUser(user)) return DEMO_READ_ONLY;
   // Feedback and votes go too (onDelete: Cascade in the schema).
   await db.project.delete({ where: { id: projectId } });
   redirect("/dashboard");

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && cp dist/widget.js ../../apps/web/public/widget.js",
+    "build": "tsc --noEmit && vite build && cp dist/widget.js ../../apps/web/public/widget.js && node scripts/build-demo.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
