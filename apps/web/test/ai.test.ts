@@ -1,5 +1,35 @@
-import { describe, expect, it } from "vitest";
-import { sseToText } from "../src/lib/ai";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { aiConfig, sseToText } from "../src/lib/ai";
+
+// Obviously fake key, used only to test that keys never end up as the model.
+const FAKE_KEY = "gsk_" + "TESTONLY".repeat(6) + "abcd";
+
+describe("aiConfig", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("never uses or logs an API key pasted into AI_MODEL", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("AI_API_KEY", "gsk_fake");
+    vi.stubEnv("AI_MODEL", FAKE_KEY);
+    expect(aiConfig()?.model).toBe("qwen/qwen3.8-27b");
+    expect(JSON.stringify(err.mock.calls)).not.toContain("TESTONLY");
+    err.mockRestore();
+  });
+
+  it("strips quotes and whitespace pasted into dashboard env vars", () => {
+    vi.stubEnv("AI_API_KEY", ' "gsk_fake" ');
+    vi.stubEnv("AI_MODEL", "'qwen/qwen3.8-27b'\n");
+    expect(aiConfig()).toMatchObject({ apiKey: "gsk_fake", model: "qwen/qwen3.8-27b", baseUrl: "https://api.groq.com/openai/v1" });
+  });
+
+  it("keeps real model ids untouched", () => {
+    vi.stubEnv("AI_API_KEY", "gsk_fake");
+    for (const id of ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "llama3.1:8b", "llama-3.3-70b-versatile"]) {
+      vi.stubEnv("AI_MODEL", id);
+      expect(aiConfig()?.model).toBe(id);
+    }
+  });
+});
 
 // Feed raw byte chunks through the SSE parser and collect the text it emits.
 async function run(chunks: string[]) {

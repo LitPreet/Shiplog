@@ -17,11 +17,22 @@ export type AiConfig = { baseUrl: string; model: string; apiKey?: string };
 // ("gsk_..." or a trailing newline), which silently breaks auth.
 const clean = (v: string | undefined) => v?.trim().replace(/^["']|["']$/g, "").trim() || undefined;
 
+// Catches an API key pasted into the wrong variable (AI_MODEL) before it is
+// sent to the provider as a model name or written to logs. Keys look like
+// "gsk_...", "sk-...", or long random strings; model ids contain "/", "-", ":" or ".".
+const looksLikeSecret = (v: string) =>
+  /^(gsk_|sk-|sk_|xai-)/i.test(v) || (/^[A-Za-z0-9_]{32,}$/.test(v) && !/[/:.-]/.test(v));
+
 export function aiConfig(): AiConfig | null {
   const apiKey = clean(process.env.AI_API_KEY);
   const baseUrl = clean(process.env.AI_BASE_URL) || (apiKey ? GROQ_BASE_URL : "");
   if (!baseUrl) return null;
-  return { baseUrl: baseUrl.replace(/\/$/, ""), model: clean(process.env.AI_MODEL) || DEFAULT_MODEL, apiKey };
+  let model = clean(process.env.AI_MODEL) || DEFAULT_MODEL;
+  if (looksLikeSecret(model)) {
+    console.error("[ai] AI_MODEL looks like an API key; ignoring it and using the default model. Put the key in AI_API_KEY.");
+    model = DEFAULT_MODEL;
+  }
+  return { baseUrl: baseUrl.replace(/\/$/, ""), model, apiKey };
 }
 
 export type Message = { role: "system" | "user" | "assistant"; content: string };
