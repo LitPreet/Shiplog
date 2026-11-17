@@ -80,6 +80,26 @@ The key is **public by design**. Anyone can view the page source and copy it. La
    must be one of the configured options, required fields are enforced, unknown keys are dropped.
    Answers are never returned by the public API (they can contain emails).
 
+## AI features
+
+Two layers, cheapest first:
+
+1. **While typing** (`GET /api/v1/feedback/similar`): Postgres `pg_trgm` word similarity on a GIN
+   trigram index. No AI, a few milliseconds, debounced in the widget, and stale requests are
+   cancelled with `AbortController`.
+2. **On submit** (`POST /api/v1/feedback/check`): one LLM call in JSON mode at temperature 0. The
+   candidates are the trigram matches plus the most-voted ideas (capped at 30, to keep the prompt
+   small). The model may only pick from candidate IDs; anything else is discarded. On timeout
+   (5s), rate limit, or no AI configured, it falls back to strict trigram matching.
+
+**Dashboard summary** (`POST /api/projects/:id/summary`) is a Route Handler, not a Server Action,
+because it streams. The provider's Server-Sent Events are turned into a plain-text stream
+(`sseToText`), the client renders the Markdown progressively (as React elements, never raw HTML),
+and "Stop" aborts both the browser request and the upstream LLM call.
+
+`lib/ai.ts` talks to any OpenAI-compatible endpoint (Groq, Ollama, OpenRouter, OpenAI) with
+`fetch`. The provider is chosen by `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY`.
+
 ## Owner auth (dashboard)
 
 Hand-written session auth, no library, so every step is explainable:

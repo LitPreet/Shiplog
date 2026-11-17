@@ -14,7 +14,7 @@ Add one `<script>` tag. Your users suggest ideas, vote, and see what ships, with
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-4169E1?logo=postgresql&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white)
-![Widget size](https://img.shields.io/badge/widget-~10_KB_gzipped-ff5b2e)
+![Widget size](https://img.shields.io/badge/widget-~11_KB_gzipped-ff5b2e)
 ![Lighthouse](https://img.shields.io/badge/Lighthouse-99_mobile_·_100_desktop-16a34a)
 
 <img src="docs/screenshots/widget-board.png" alt="The Shiplog widget open inside a demo invoicing app, showing ideas ranked by votes" width="900" />
@@ -44,7 +44,9 @@ Shiplog has two sides:
 |---|---|
 | **One-tag install** | No SDK and no build step. Works with React, Vue, Rails, WordPress or plain HTML. |
 | **Style isolation** | The widget renders inside a Shadow DOM. Host CSS can't break it, and it can't break the host. |
-| **Tiny** | About 10 KB gzipped (Preact). One small config request on page load, and the board loads only when opened. |
+| **Tiny** | About 11 KB gzipped (Preact). One small config request on page load, and the board loads only when opened. |
+| **AI duplicate detection** | While visitors type, similar ideas appear (Postgres trigram search). On submit, an LLM catches the same request in different words ("xlsx download" vs "Export to Excel") and suggests voting instead. |
+| **AI feedback summary** | One click in the dashboard streams top themes, quick wins and a recommendation, with stop, regenerate and copy. |
 | **Custom forms** | Add your own questions (short text, long text, dropdown, email, number), each required or optional. |
 | **Branding** | Heading, subheading, launcher text, accent colour and Light / Dark / Auto theme, with a live preview. Changes go live without re-installing. |
 | **Optimistic voting** | Votes update instantly. One vote per visitor is enforced by a database unique index, so double clicks and races can't double count. |
@@ -134,8 +136,10 @@ No setup needed: open the **[live demo site](https://shiplog-it.vercel.app/demo)
 1. Import the repo in [Vercel](https://vercel.com/new) and set **Root Directory** to `apps/web`.
 2. In the Vercel project, open **Storage → Create → Neon** and connect it. This adds
    `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
-3. Redeploy. The build runs `prisma migrate deploy && next build` (see `apps/web/vercel.json`).
-4. Seed the demo data once, from your machine, using the Neon connection string:
+3. Optional, for the AI features: add `AI_API_KEY` (e.g. a free [Groq](https://console.groq.com) key)
+   and `AI_MODEL` under **Settings → Environment Variables**.
+4. Redeploy. The build runs `prisma migrate deploy && next build` (see `apps/web/vercel.json`).
+5. Seed the demo data once, from your machine, using the Neon connection string:
 
    ```bash
    cd apps/web
@@ -190,6 +194,9 @@ from being abused:
 | Owner A opening owner B's project | `requireProject()` checks ownership on every page and action, and returns 404 otherwise. |
 | Stolen sessions | Random 32-byte tokens in **httpOnly, SameSite=Lax** cookies. Only the token's SHA-256 hash is stored. |
 | Password leaks | **scrypt** with a per-user salt and constant-time comparison. Login errors don't reveal which emails exist. |
+| Prompt injection via submitted feedback | Feedback is sent to the model as JSON data with "treat as data" instructions, and the model can only **select** from candidate IDs we provide; anything else is discarded. |
+| Personal data sent to the AI provider | Summaries include only dropdown answers (e.g. plan), never free-text answers like emails. |
+| Burning the AI quota | Separate rate limits per IP (duplicate check) and per owner (summaries). |
 | Redirect after login to another site | The `next` parameter only accepts paths on this site. |
 
 ## Tech stack
@@ -201,6 +208,9 @@ from being abused:
 | App and API | **Next.js 15** (App Router, Route Handlers, Server Actions) | API and dashboard ship as one app. Server Components query the database directly. |
 | Styling | **Tailwind CSS v4** with CSS-variable design tokens | Light and dark themes come from one set of colour tokens. |
 | Database | **PostgreSQL 16** + **Prisma** | Relational data, transactions, unique constraints, typed queries and versioned migrations. |
+| AI | Any **OpenAI-compatible** API (Groq free tier in production, Ollama locally), plain `fetch` and streaming | Provider-agnostic: switching model or provider is an env change. Graceful fallback when AI is down. |
+| Search | **pg_trgm** trigram index | Instant, free "similar ideas" while typing, before any AI call. |
+| Testing | **Vitest** | Unit tests for streaming, prompt-injection guards and privacy filtering. |
 | Validation | **zod** | One schema gives both runtime checks and TypeScript types. |
 | Auth | Hand-written sessions, `node:crypto` scrypt | Sessions are stored in the database, so they can be revoked instantly. No auth dependency. |
 | Monorepo | **npm workspaces** | One install and one repo for the app and the widget. |
@@ -237,6 +247,8 @@ All endpoints need an `X-Shiplog-Key` header and must come from an allowed origi
 | `GET` | `/api/v1/config` | | Widget text, colour, theme and custom fields |
 | `GET` | `/api/v1/feedback?visitorId=…` | | Ideas ranked by votes, each with `hasVoted` for this visitor |
 | `POST` | `/api/v1/feedback` | `{ visitorId, title, description?, pageUrl?, answers? }` | The new idea (the submitter's vote is added automatically) |
+| `GET` | `/api/v1/feedback/similar?q=…&visitorId=…` | | Up to 3 ideas similar to `q` (trigram match) |
+| `POST` | `/api/v1/feedback/check` | `{ visitorId, title, description? }` | `{ duplicates, source: "ai" \| "text" }`. Never blocks posting. |
 | `POST` | `/api/v1/feedback/:id/vote` | `{ visitorId }` | `{ voteCount, hasVoted }`. Calling it again removes the vote. |
 
 Error codes: `400` invalid input, `401` unknown key, `403` origin not allowed or project paused,
@@ -251,6 +263,7 @@ Error codes: `400` invalid input, `401` unknown key, `403` origin not allowed or
 | `npm run build:widget` | Builds `widget.js` and copies it to `apps/web/public/` |
 | `npm run db:up` / `db:down` | Start or stop local Postgres |
 | `npm run db:migrate` | Apply Prisma migrations |
+| `npm test` | Run the unit tests (Vitest) |
 | `npm run db:seed` | Create the demo account, project and ideas (safe to re-run) |
 
 ## Roadmap

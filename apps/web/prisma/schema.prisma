@@ -2,7 +2,8 @@
 // Run `npm run db:migrate` after changing this file to create a migration.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -12,6 +13,8 @@ datasource db {
   // Direct connection for migrations (poolers can't run them). Locally both are the same URL.
   // Names match what the Vercel + Neon integration creates automatically.
   directUrl = env("DATABASE_URL_UNPOOLED")
+  // pg_trgm = trigram text similarity, powers "similar ideas" in the widget.
+  extensions = [pg_trgm]
 }
 
 // A person who signs in to the dashboard and owns projects.
@@ -106,6 +109,8 @@ model Feedback {
   votes       Vote[]
 
   @@index([projectId, voteCount])
+  // Trigram index: similarity(title, query) stays an index lookup as boards grow.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Vote {

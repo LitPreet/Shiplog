@@ -193,3 +193,26 @@ button { cursor: pointer; font: inherit; }
   color: var(--sl-bg);
   font-size: 13px;
 }
+
+/* ---------- Similar ideas + duplicate prompt ---------- */
+.similar { margin-top: -4px; padding: 10px; border-radius: 10px; background: var(--sl-soft); }
+.similar-title { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--sl-muted); }
+.similar-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.similar-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; border: 1px solid var(--sl-border); border-radius: 8px; background: var(--sl-bg);
+  animation: sl-in 0.15s ease-out;
+}
+.similar-name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.similar-meta { display: flex; align-items: center; gap: 6px; flex: none; }
+.similar-meta .badge { margin-top: 0; }
+.mini-vote {
+  border: 1px solid var(--sl-border); background: var(--sl-bg); color: var(--sl-fg);
+  border-radius: 7px; padding: 4px 8px; font-size: 12px; font-weight: 600;
+}
+.mini-vote:hover { border-color: var(--sl-accent); }
+.mini-vote.voted { background: var(--sl-accent); border-color: var(--sl-accent); color: var(--sl-accent-ink, #fff); }
+.dup { display: flex; flex-direction: column; gap: 10px; animation: sl-in 0.15s ease-out; }
+.dup-title { margin: 0; font-size: 15px; font-weight: 600; }
+.dup-sub { margin: -6px 0 0; font-size: 13px; color: var(--sl-muted); }
+.dup-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }

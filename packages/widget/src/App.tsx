@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { Api, FeedbackItem, FeedbackStatus, FormField, NewIdea, WidgetConfig } from "./api";
+import type { Api, FeedbackItem, FeedbackStatus, FormField, NewIdea, SimilarIdea, WidgetConfig } from "./api";
 
 const STATUS_LABEL: Record<FeedbackStatus, string> = {
   OPEN: "Open",
@@ -106,7 +106,16 @@ export function App({ api, settings }: { api: Api; settings: WidgetConfig }) {
             {tab === "board" ? (
               <Board items={items} error={loadError} onRetry={load} onVote={handleVote} onSuggest={() => setTab("new")} />
             ) : (
-              <NewIdeaForm settings={settings} onSubmit={handleCreate} />
+              <NewIdeaForm
+                api={api}
+                settings={settings}
+                onSubmit={handleCreate}
+                onVoted={(msg) => {
+                  setItems(null); // board refetches with the new vote next time it's shown
+                  setTab("board");
+                  setToast(msg);
+                }}
+              />
             )}
           </div>
 
@@ -191,27 +200,61 @@ function Board(props: {
   );
 }
 
-function NewIdeaForm({ settings, onSubmit }: { settings: WidgetConfig; onSubmit: (input: NewIdea) => Promise<void> }) {
+function NewIdeaForm(props: {
+  api: Api;
+  settings: WidgetConfig;
+  onSubmit: (input: NewIdea) => Promise<void>;
+  onVoted: (message: string) => void;
+}) {
+  const { api, settings, onSubmit } = props;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   // Custom field values keyed by field id, exactly what the API expects.
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Live "similar ideas" while typing (text match), and AI-found duplicates on submit.
+  const [similar, setSimilar] = useState<SimilarIdea[]>([]);
+  const [duplicates, setDuplicates] = useState<SimilarIdea[] | null>(null);
 
-  async function submit(e: Event) {
-    e.preventDefault();
-    if (title.trim().length < 3) {
-      setError(`${settings.titleLabel}: please write at least 3 characters.`);
+  // Debounce (300ms) + cancel the previous request, so fast typing can't show
+  // results for an older query that happened to arrive last.
+  useEffect(() => {
+    const q = title.trim();
+    if (q.length < 3) {
+      setSimilar([]);
       return;
     }
-    // Quick client-side check for a friendlier message. The server validates
-    // again against the same config; this is UX, not security.
+    const controller = new AbortController();
+    const t = setTimeout(() => {
+      api
+        .similar(q, controller.signal)
+        .then((res) => setSimilar(res.items))
+        .catch(() => {}); // aborted or offline: keep quiet, it's only a hint
+    }, 300);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [title, api]);
+
+  async function vote(idea: SimilarIdea) {
+    try {
+      if (!idea.hasVoted) await api.toggleVote(idea.id);
+      props.onVoted(`Voted for “${idea.title}”. Thanks!`);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  function validate() {
+    if (title.trim().length < 3) return `${settings.titleLabel}: please write at least 3 characters.`;
+    // Client-side check for a friendlier message; the server validates again.
     const missing = settings.fields.find((f) => f.required && !answers[f.id]?.trim());
-    if (missing) {
-      setError(`${missing.label} is required.`);
-      return;
-    }
+    return missing ? `${missing.label} is required.` : null;
+  }
+
+  async function post() {
     setSubmitting(true);
     setError(null);
     try {
@@ -224,6 +267,61 @@ function NewIdeaForm({ settings, onSubmit }: { settings: WidgetConfig; onSubmit:
       setError((err as Error).message);
       setSubmitting(false);
     }
+  }
+
+  async function submit(e: Event) {
+    e.preventDefault();
+    const problem = validate();
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    // Ask the AI whether this already exists. Any failure: just post.
+    const found = await api
+      .check({ title: title.trim(), description: description.trim() || undefined })
+      .then((r) => r.duplicates)
+      .catch(() => []);
+    if (found.length > 0) {
+      setDuplicates(found);
+      setSubmitting(false);
+      return;
+    }
+    await post();
+  }
+
+  if (duplicates) {
+    return (
+      <div class="dup" role="alertdialog" aria-labelledby="sl-dup-title">
+        <p id="sl-dup-title" class="dup-title">
+          This might already be on the board
+        </p>
+        <p class="dup-sub">Voting for an existing idea helps it get built sooner.</p>
+        <ul class="similar-list">
+          {duplicates.map((d) => (
+            <SimilarRow key={d.id} idea={d} onVote={() => vote(d)} />
+          ))}
+        </ul>
+        <div class="dup-actions">
+          <button class="btn" type="button" onClick={() => setDuplicates(null)}>
+            Edit my idea
+          </button>
+          <button
+            class="btn primary"
+            type="button"
+            disabled={submitting}
+            onClick={() => {
+              setDuplicates(null);
+              post();
+            }}
+          >
+            {submitting ? "Posting…" : "Post mine anyway"}
+          </button>
+        </div>
+        {error && <p class="error" role="alert">{error}</p>}
+      </div>
+    );
   }
 
   return (
@@ -241,6 +339,16 @@ function NewIdeaForm({ settings, onSubmit }: { settings: WidgetConfig; onSubmit:
           autoFocus
         />
       </label>
+      {similar.length > 0 && (
+        <div class="similar" aria-live="polite">
+          <p class="similar-title">Similar ideas: vote instead?</p>
+          <ul class="similar-list">
+            {similar.map((s) => (
+              <SimilarRow key={s.id} idea={s} onVote={() => vote(s)} />
+            ))}
+          </ul>
+        </div>
+      )}
       {settings.showDescription && (
         <label>
           <span>
@@ -265,9 +373,28 @@ function NewIdeaForm({ settings, onSubmit }: { settings: WidgetConfig; onSubmit:
       ))}
       {error && <p class="error" role="alert">{error}</p>}
       <button class="btn primary" type="submit" disabled={submitting}>
-        {submitting ? "Posting…" : "Post idea"}
+        {submitting ? "Checking…" : "Post idea"}
       </button>
     </form>
+  );
+}
+
+function SimilarRow({ idea, onVote }: { idea: SimilarIdea; onVote: () => void }) {
+  return (
+    <li class="similar-row">
+      <span class="similar-name">{idea.title}</span>
+      <span class="similar-meta">
+        {idea.status !== "OPEN" && <span class={`badge badge-${idea.status.toLowerCase()}`}>{STATUS_LABEL[idea.status]}</span>}
+        <button
+          type="button"
+          class={idea.hasVoted ? "mini-vote voted" : "mini-vote"}
+          aria-label={`${idea.voteCount} votes. ${idea.hasVoted ? "You voted for" : "Vote for"} ${idea.title}`}
+          onClick={onVote}
+        >
+          ▲ {idea.voteCount}
+        </button>
+      </span>
+    </li>
   );
 }
 

@@ -12,7 +12,8 @@
     "db:seed": "npm run db:seed -w web",
     "dev:web": "npm run dev -w web",
     "dev:widget": "npm run dev -w @shiplog/widget",
-    "build:widget": "npm run build -w @shiplog/widget"
+    "build:widget": "npm run build -w @shiplog/widget",
+    "test": "npm run test -w web"
   },
   "allowScripts": {
     "@prisma/client@6.19.3": true,

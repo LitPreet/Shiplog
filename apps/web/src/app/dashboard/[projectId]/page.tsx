@@ -4,6 +4,7 @@ import { requireProject } from "@/lib/auth";
 import { parseAnswers } from "@/lib/form-fields";
 import { STATUSES, STATUS_META, isStatus } from "@/lib/status";
 import { ArrowRight, ArrowUp, Check, Inbox } from "@/components/icons";
+import { AiSummary } from "./ai-summary";
 import { DeleteFeedbackButton } from "./delete-feedback";
 import { StatusSelect } from "./status-select";
 
@@ -106,6 +107,12 @@ export default async function ProjectPage({
             ))}
           </div>
         </section>
+      )}
+
+      {total > 0 && (
+        <div className="mt-3">
+          <AiSummary projectId={projectId} />
+        </div>
       )}
 
       {/* Feedback */}
