@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireProject } from "@/lib/auth";
+import { readableInk } from "@/lib/color";
 import { ProjectTabs } from "./tabs";
 
 export default async function ProjectLayout({
@@ -18,7 +19,7 @@ export default async function ProjectLayout({
         ← All projects
       </Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-xl font-semibold text-white" style={{ background: project.accentColor }}>
+        <span className="grid size-9 place-items-center rounded-xl font-semibold" style={{ background: project.accentColor, color: readableInk(project.accentColor) }}>
           {project.name.charAt(0).toUpperCase()}
         </span>
         <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>

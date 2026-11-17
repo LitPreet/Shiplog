@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent } from "react";
+import { readableInk } from "@/lib/color";
 import { ArrowUp, Check, Message, Moon, X } from "../icons";
 
 // A faithful, self-contained replica of the real widget for the landing page.
@@ -18,10 +19,11 @@ const SEED: Idea[] = [
 ];
 
 const STATUS: Record<Status, { label: string; color: string }> = {
-  OPEN: { label: "Open", color: "#8a8a94" },
-  PLANNED: { label: "Planned", color: "#3b82f6" },
-  IN_PROGRESS: { label: "In progress", color: "#f59e0b" },
-  DONE: { label: "Shipped", color: "#22c55e" },
+  // Darker shades so badge text passes WCAG AA on its own tint.
+  OPEN: { label: "Open", color: "#6b6b76" },
+  PLANNED: { label: "Planned", color: "#1d4ed8" },
+  IN_PROGRESS: { label: "In progress", color: "#92400e" },
+  DONE: { label: "Shipped", color: "#166534" },
 };
 
 const ACCENTS = ["#ff5b2e", "#6d5dfc", "#0ea5e9", "#10b981", "#e11d74"];
@@ -45,6 +47,9 @@ export function WidgetPlayground() {
   const [toast, setToast] = useState<string | null>(null);
 
   const t = THEMES[theme];
+  const ink = readableInk(accent);
+  // Accent as text needs to be darker (light theme) / lighter (dark theme) to stay readable.
+  const accentText = `color-mix(in srgb, ${accent} 72%, ${theme === "light" ? "#000" : "#fff"})`;
   const vars = {
     "--pg-accent": accent,
     "--pg-bg": t.bg,
@@ -119,7 +124,7 @@ export function WidgetPlayground() {
                     className="shrink-0 rounded-full border px-2.5 py-1 text-[12px] font-medium transition"
                     style={
                       filter === f
-                        ? { borderColor: accent, color: accent, background: `color-mix(in srgb, ${accent} 10%, transparent)` }
+                        ? { borderColor: accent, color: accentText, background: `color-mix(in srgb, ${accent} 10%, transparent)` }
                         : { borderColor: t.border, color: t.muted }
                     }
                   >
@@ -133,11 +138,11 @@ export function WidgetPlayground() {
                     <button
                       onClick={() => vote(i.id)}
                       aria-pressed={i.voted}
-                      aria-label={`${i.voted ? "Remove vote from" : "Vote for"} ${i.title}`}
+                      aria-label={`${i.votes} votes. ${i.voted ? "Remove vote from" : "Vote for"} ${i.title}`}
                       className={`flex w-11 shrink-0 flex-col items-center justify-center rounded-lg border text-[13px] font-semibold tabular-nums transition ${bumped === i.id ? "animate-bump" : ""}`}
                       style={
                         i.voted
-                          ? { borderColor: accent, background: accent, color: "#fff" }
+                          ? { borderColor: accent, background: accent, color: ink }
                           : { borderColor: t.border, color: t.muted }
                       }
                     >
@@ -185,8 +190,8 @@ export function WidgetPlayground() {
               <button
                 type="submit"
                 disabled={title.trim().length < 3}
-                className="rounded-lg py-2.5 font-semibold text-white transition disabled:opacity-50"
-                style={{ background: accent }}
+                className="rounded-lg py-2.5 font-semibold transition disabled:opacity-50"
+                style={{ background: accent, color: ink }}
               >
                 Post idea
               </button>
@@ -228,8 +233,8 @@ export function WidgetPlayground() {
           </button>
         </div>
         <span
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[14px] font-semibold text-white shadow-lg"
-          style={{ background: accent, boxShadow: `0 10px 30px -8px ${accent}` }}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[14px] font-semibold shadow-lg"
+          style={{ background: accent, color: ink, boxShadow: `0 10px 30px -8px ${accent}` }}
         >
           <Message className="size-4" /> Feedback
         </span>

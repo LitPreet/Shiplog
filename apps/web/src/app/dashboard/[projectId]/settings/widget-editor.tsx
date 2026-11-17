@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { ArrowUp, Check, Message, Plus, X } from "@/components/icons";
 import { FIELD_TYPES, FIELD_TYPE_LABEL, MAX_FIELDS, WIDGET_THEMES, type FieldType, type FormField, type WidgetTheme } from "@/lib/form-fields";
+import { readableInk } from "@/lib/color";
 import { saveWidget, type WidgetSettings } from "../actions";
 
 // Must match the palettes in packages/widget/src/styles.css.
@@ -321,6 +322,7 @@ function OptionsEditor({ options, onChange }: { options: string[]; onChange: (o:
 function Preview({ s }: { s: WidgetSettings }) {
   const [tab, setTab] = useState<"board" | "new">("new");
   const accent = s.accentColor;
+  const ink = readableInk(accent);
   // "auto" depends on each visitor; preview it in the dashboard's own scheme.
   // Read after mount (not during render) so server and client HTML match.
   const [systemDark, setSystemDark] = useState(false);
@@ -386,7 +388,7 @@ function Preview({ s }: { s: WidgetSettings }) {
                   )}
                 </PreviewField>
               ))}
-              <div className="mt-1 rounded-md py-2 text-center font-semibold text-white" style={{ background: accent }}>
+              <div className="mt-1 rounded-md py-2 text-center font-semibold" style={{ background: accent, color: ink }}>
                 Post idea
               </div>
             </>
@@ -395,8 +397,8 @@ function Preview({ s }: { s: WidgetSettings }) {
       </div>
       <div className="mt-3 flex justify-end">
         <span
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white"
-          style={{ background: accent, boxShadow: `0 10px 30px -8px ${accent}` }}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold"
+          style={{ background: accent, color: ink, boxShadow: `0 10px 30px -8px ${accent}` }}
         >
           <Message /> {s.launcherText || "Feedback"}
         </span>

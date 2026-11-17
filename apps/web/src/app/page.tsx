@@ -68,7 +68,8 @@ export default async function Home() {
       <section className="relative">
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 pt-16 pb-24 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-24">
-          <div className="animate-rise">
+          {/* No entrance animation here: this headline is the LCP element. */}
+          <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted">
               <span className="size-1.5 rounded-full bg-accent" />
               In-app feedback, open source
@@ -112,8 +113,9 @@ export default async function Home() {
       <section id="how" className="border-y border-border bg-card">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <SectionHeading eyebrow="How it works" title="A feedback loop that actually closes." />
-          <ol className="relative mt-12 grid gap-6 md:grid-cols-3">
-            <div className="absolute top-6 right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent md:block" />
+          <div className="relative mt-12">
+          <div aria-hidden="true" className="absolute top-6 right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent md:block" />
+          <ol className="relative grid gap-6 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <li key={s.title} className="relative flex flex-col items-start md:items-center md:text-center">
                 <span className="relative grid size-12 place-items-center rounded-2xl border border-border bg-background text-xl text-accent">
@@ -127,6 +129,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          </div>
         </div>
       </section>
 
@@ -145,11 +148,11 @@ export default async function Home() {
                 <span className="size-2.5 rounded-full bg-white/15" />
                 <span className="size-2.5 rounded-full bg-white/15" />
               </div>
-              <span className="font-mono text-xs text-white/40">index.html</span>
+              <span className="font-mono text-xs text-white/60">index.html</span>
               <CopyButton text={SNIPPET} className="border-white/10 bg-white/5 text-white/60 hover:text-white" />
             </div>
             <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed">
-              <span className="text-white/35">{"<!-- before </body> -->"}</span>
+              <span className="text-white/60">{"<!-- before </body> -->"}</span>
               {"\n"}
               <span className="text-[#ff8a65]">{"<script"}</span> <span className="text-[#9ecbff]">src</span>=
               <span className="text-[#b5e8a0]">&quot;https://shiplog.dev/widget.js&quot;</span>

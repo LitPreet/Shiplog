@@ -172,7 +172,7 @@ function Board(props: {
           <button
             class={item.hasVoted ? "vote voted" : "vote"}
             aria-pressed={item.hasVoted}
-            aria-label={`${item.hasVoted ? "Remove vote from" : "Vote for"} ${item.title}`}
+            aria-label={`${item.voteCount} votes. ${item.hasVoted ? "Remove vote from" : "Vote for"} ${item.title}`}
             onClick={() => props.onVote(item)}
           >
             <span aria-hidden="true">▲</span>

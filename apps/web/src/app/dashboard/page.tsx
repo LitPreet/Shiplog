@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { readableInk } from "@/lib/color";
 import { MAX_PROJECTS } from "@/lib/limits";
 import { ArrowRight, Inbox } from "@/components/icons";
 import { NewProject } from "./new-project";
@@ -53,8 +54,8 @@ export default async function DashboardPage() {
               >
                 <div className="flex items-start justify-between">
                   <span
-                    className="grid size-10 place-items-center rounded-xl text-lg font-semibold text-white"
-                    style={{ background: p.accentColor }}
+                    className="grid size-10 place-items-center rounded-xl text-lg font-semibold"
+                    style={{ background: p.accentColor, color: readableInk(p.accentColor) }}
                   >
                     {p.name.charAt(0).toUpperCase()}
                   </span>

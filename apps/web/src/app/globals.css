@@ -13,13 +13,13 @@
   --subtle: #f2f1ed;
   --border: #e7e5e0;
   --accent: #ff5b2e;
-  --accent-ink: #ffffff;
+  --accent-ink: #111114; /* 6.1:1 on the orange; white was only 3.1:1 */
   --accent-soft: #fff0ea;
   --grid-line: rgba(14, 14, 16, 0.05);
 
   --planned: #2563eb;
-  --progress: #d97706;
-  --done: #16a34a;
+  --progress: #b45309;
+  --done: #15803d;
   --closed: #8a8a94;
 }
 

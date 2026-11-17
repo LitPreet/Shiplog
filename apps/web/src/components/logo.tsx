@@ -3,7 +3,7 @@ import Link from "next/link";
 // The mark: a loop that ends in an arrowhead (feedback goes round, ideas ship).
 export function LogoMark({ className = "size-7" }: { className?: string }) {
   return (
-    <span className={`inline-grid place-items-center rounded-[9px] bg-accent text-accent-ink ${className}`}>
+    <span className={`inline-grid place-items-center rounded-[9px] bg-accent text-white ${className}`}>
       <svg viewBox="0 0 24 24" className="size-[62%]" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M19 12a7 7 0 1 1-3.2-5.9" />
         <path d="M16.5 2.8l-.7 3.3 3.3.7" />

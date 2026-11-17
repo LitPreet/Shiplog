@@ -2,6 +2,7 @@ import { render } from "preact";
 import { App } from "./App";
 import { createApi } from "./api";
 import { readConfig } from "./config";
+import { readableInk } from "./color";
 // "?inline" = Vite gives us the CSS as a string instead of injecting a <link>
 // into the page, so we can put it INSIDE our shadow root.
 import styles from "./styles.css?inline";
@@ -32,7 +33,10 @@ async function mount() {
   // 1. A plain host element on the customer's page...
   const host = document.createElement("div");
   host.id = "shiplog-root";
-  host.style.setProperty("--sl-accent", config.color ?? settings.accentColor);
+  const accent = config.color ?? settings.accentColor;
+  host.style.setProperty("--sl-accent", accent);
+  // Text on accent backgrounds: white or dark, whichever is more readable.
+  host.style.setProperty("--sl-accent-ink", readableInk(accent));
   document.body.appendChild(host);
 
   // 2. ...with a Shadow DOM inside it. CSS can't cross the shadow boundary in

@@ -10,7 +10,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <div className="relative grid min-h-screen place-items-center px-4 py-12">
       <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-      <div className="relative w-full max-w-sm animate-rise">
+      {/* No fade-in: this card is the first and largest paint. */}
+      <div className="relative w-full max-w-sm">
         <div className="mb-8 flex justify-center">
           <Logo />
         </div>
