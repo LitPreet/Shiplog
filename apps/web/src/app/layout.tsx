@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
@@ -27,6 +29,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}>
         {children}
+        {/* Real-user data on Vercel: page views, and Core Web Vitals (LCP, INP, CLS)
+            from actual visitors, the field data to compare with Lighthouse's lab data.
+            Both load after the page is interactive and do nothing outside Vercel. */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

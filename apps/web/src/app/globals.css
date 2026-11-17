@@ -124,6 +124,142 @@ body {
   animation: float 5s ease-in-out infinite;
 }
 
+/* ------------------------------------------------------------------
+   Homepage motion. Rules:
+   - Only transform/opacity (GPU-composited, no layout work).
+   - The hero <h1> is the LCP element: it may MOVE in, never FADE in
+     (Chrome ignores paints at opacity 0, which would delay LCP).
+   - Everything is disabled by the reduced-motion block below.
+------------------------------------------------------------------- */
+
+/* Hero headline: movement only. */
+@keyframes slide-up {
+  from {
+    transform: translateY(18px);
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Hand-drawn underline (path uses pathLength="1"). */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.animate-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.9s 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* Activity feed card entrance. */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+.animate-pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* Slow drifting colour blobs behind the hero widget. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(28px, -22px) scale(1.12);
+  }
+}
+.animate-drift {
+  animation: drift 14s ease-in-out infinite;
+}
+.animate-drift-slow {
+  animation: drift 19s ease-in-out infinite reverse;
+}
+
+/* CTA glow breathing. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.15);
+    opacity: 0.75;
+  }
+}
+.animate-breathe {
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* "How it works": a pulse travels the connector line (3.6s loop), and each
+   step icon pings as the pulse reaches it (start, middle, end). */
+.travel-track {
+  container-type: inline-size;
+}
+@keyframes travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(100cqw);
+    opacity: 1;
+  }
+  85%,
+  100% {
+    transform: translateX(100cqw);
+    opacity: 0;
+  }
+}
+.animate-travel {
+  animation: travel 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes step-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  22%,
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.animate-step-ping {
+  animation: step-ping 3.6s ease-out infinite;
+}
+
+/* Scroll reveals with CSS scroll-driven animations: no JavaScript. Browsers
+   without support skip the @supports block and simply show the content.
+   Movement only, no fade: progress is tied to SCROLL POSITION, so a fade
+   would leave text half-transparent (failing contrast) whenever it sits at
+   the screen edge. Each reveal completes once the element is fully on screen. */
+@keyframes reveal {
+  from {
+    transform: translateY(48px) scale(0.96);
+  }
+}
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-timeline: view();
+    animation-range: entry calc(var(--i, 0) * 10%) entry calc(75% + var(--i, 0) * 10%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

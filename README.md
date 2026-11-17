@@ -6,6 +6,8 @@
 
 Add one `<script>` tag. Your users suggest ideas, vote, and see what ships, without leaving your product.
 
+**[Live app](https://shiplog-it.vercel.app)** · **[Try the widget on a demo site](https://shiplog-it.vercel.app/demo)** · Demo login: `demo@shiplog.dev` / `demo12345` (read-only)
+
 ![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Preact](https://img.shields.io/badge/Preact-673AB8?logo=preact&logoColor=white)
@@ -13,6 +15,7 @@ Add one `<script>` tag. Your users suggest ideas, vote, and see what ships, with
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Widget size](https://img.shields.io/badge/widget-~10_KB_gzipped-ff5b2e)
+![Lighthouse](https://img.shields.io/badge/Lighthouse-99_mobile_·_100_desktop-16a34a)
 
 <img src="docs/screenshots/widget-board.png" alt="The Shiplog widget open inside a demo invoicing app, showing ideas ranked by votes" width="900" />
 
@@ -102,6 +105,9 @@ After changing the widget, run `npm run build:widget`. This writes `apps/web/pub
 and the `/demo` page, which are committed so the deployed app serves them.
 
 ### Try it
+
+No setup needed: open the **[live demo site](https://shiplog-it.vercel.app/demo)** and the
+**[dashboard](https://shiplog-it.vercel.app/login)**. Locally:
 
 1. Open **http://localhost:5173**. It's *Acme Invoices*, a demo app with the widget embedded.
    Click **Share feedback →** or the button in the corner. Vote on ideas or suggest one.

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import { Logo } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth";
+import { ActivityFeed } from "@/components/marketing/activity-feed";
 import { WidgetPlayground } from "@/components/marketing/widget-playground";
 import { ArrowRight, Bolt, Code, Gauge, Globe, Layers, Message, Rocket, Shield } from "@/components/icons";
 
@@ -71,21 +72,43 @@ export default async function Home() {
       <section className="relative">
         <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 pt-16 pb-24 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-24">
-          {/* No entrance animation here: this headline is the LCP element. */}
+          {/* The <h1> is the LCP element: it slides in but never fades in. */}
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted">
-              <span className="size-1.5 rounded-full bg-accent" />
+            <span className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
+              </span>
               In-app feedback, open source
             </span>
-            <h1 className="mt-6 text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+            <h1 className="animate-slide-up mt-6 text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
               Hear users.
               <br />
-              <span className="font-serif font-normal italic text-accent">Ship</span> what matters.
+              <span className="relative inline-block font-serif font-normal italic text-accent">
+                Ship
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 120 12"
+                  preserveAspectRatio="none"
+                  className="absolute -bottom-[0.08em] left-0 h-[0.18em] w-full overflow-visible"
+                >
+                  <path
+                    d="M2 8 C 30 2, 60 2, 118 6"
+                    pathLength={1}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    className="animate-draw"
+                  />
+                </svg>
+              </span>{" "}
+              what matters.
             </h1>
-            <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted">
+            <p className="animate-rise mt-6 max-w-lg text-lg leading-relaxed text-muted [animation-delay:120ms]">
               Add one script tag. Your users suggest ideas, vote, and see what ships, without ever leaving your product.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="animate-rise mt-8 flex flex-wrap items-center gap-3 [animation-delay:220ms]">
               <Link
                 href={cta.href}
                 className="group inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 font-semibold text-accent-ink shadow-[0_10px_30px_-10px_var(--accent)] transition hover:brightness-110"
@@ -100,7 +123,7 @@ export default async function Home() {
                 <Code /> Install in 30s
               </a>
             </div>
-            <p className="mt-6 text-sm text-muted">
+            <p className="animate-rise mt-6 text-sm text-muted [animation-delay:320ms]">
               <span className="font-medium text-foreground">Try it →</span> the widget on the right is live. Or open the{" "}
               <a href="/demo" className="font-medium text-foreground underline underline-offset-4">
                 full demo app
@@ -110,7 +133,11 @@ export default async function Home() {
           </div>
 
           <div className="relative animate-rise [animation-delay:150ms]">
-            <div className="glow absolute inset-0 -z-10 scale-90 opacity-70" />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+              <div className="glow animate-drift absolute top-[6%] left-[8%] size-[60%] opacity-70" />
+              <div className="animate-drift-slow absolute right-[4%] bottom-[10%] size-[45%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--planned)_22%,transparent),transparent)] blur-2xl" />
+            </div>
+            <ActivityFeed />
             <WidgetPlayground />
           </div>
         </div>
@@ -119,13 +146,27 @@ export default async function Home() {
       {/* How it works */}
       <section id="how" className="border-y border-border bg-card">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <SectionHeading eyebrow="How it works" title="A feedback loop that actually closes." />
+          <div className="reveal">
+            <SectionHeading eyebrow="How it works" title="A feedback loop that actually closes." />
+          </div>
           <div className="relative mt-12">
-          <div aria-hidden="true" className="absolute top-6 right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent md:block" />
+          <div aria-hidden="true" className="travel-track absolute top-6 right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent md:block">
+            <span className="animate-travel absolute -top-[3px] -left-[3px] size-[7px] rounded-full bg-accent shadow-[0_0_12px_2px_var(--accent)]" />
+          </div>
           <ol className="relative grid gap-6 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="relative flex flex-col items-start md:items-center md:text-center">
+              <li
+                key={s.title}
+                className="reveal relative flex flex-col items-start md:items-center md:text-center"
+                style={{ "--i": i } as React.CSSProperties}
+              >
                 <span className="relative grid size-12 place-items-center rounded-2xl border border-border bg-background text-xl text-accent">
+                  {/* Pings as the travelling pulse arrives: start, middle, end */}
+                  <span
+                    aria-hidden="true"
+                    className="animate-step-ping absolute inset-0 hidden rounded-2xl border-2 border-accent md:block"
+                    style={{ animationDelay: `${[0, 1.44, 2.88][i]}s` }}
+                  />
                   <s.icon />
                   <span className="absolute -top-2 -right-2 grid size-5 place-items-center rounded-full bg-foreground font-mono text-[10px] text-background">
                     {i + 1}
@@ -143,12 +184,14 @@ export default async function Home() {
       {/* Install */}
       <section id="install" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-10 lg:grid-cols-2">
+          <div className="reveal">
           <SectionHeading
             eyebrow="Install"
             title="Paste it. That's the integration."
             body="Create a project, allow your domain, drop in the tag. Works with React, Vue, Rails, WordPress, and plain HTML."
           />
-          <div className="overflow-hidden rounded-2xl border border-border bg-[#0e0e10] text-[#e8e8e6] shadow-xl">
+          </div>
+          <div style={{ "--i": 1 } as React.CSSProperties} className="reveal overflow-hidden rounded-2xl border border-border bg-[#0e0e10] text-[#e8e8e6] shadow-xl">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
               <div className="flex gap-1.5">
                 <span className="size-2.5 rounded-full bg-white/15" />
@@ -175,11 +218,17 @@ export default async function Home() {
       {/* Features */}
       <section id="features" className="border-t border-border">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <SectionHeading eyebrow="Under the hood" title="Small, fast, and hard to break." />
+          <div className="reveal">
+            <SectionHeading eyebrow="Under the hood" title="Small, fast, and hard to break." />
+          </div>
           <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="group bg-card p-6 transition hover:bg-subtle">
-                <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-lg text-accent transition group-hover:scale-105">
+            {FEATURES.map((f, i) => (
+              <div
+                key={f.title}
+                style={{ "--i": i % 3 } as React.CSSProperties}
+                className="reveal group bg-card p-6 transition-colors hover:bg-subtle"
+              >
+                <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-lg text-accent transition duration-300 group-hover:-translate-y-0.5 group-hover:-rotate-6 group-hover:scale-110">
                   <f.icon />
                 </span>
                 <h3 className="mt-4 font-semibold">{f.title}</h3>
@@ -192,8 +241,8 @@ export default async function Home() {
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-foreground px-6 py-16 text-center text-background sm:px-12">
-          <div className="glow absolute -top-1/2 left-1/2 h-full w-2/3 -translate-x-1/2 opacity-60" />
+        <div className="reveal relative overflow-hidden rounded-3xl bg-foreground px-6 py-16 text-center text-background sm:px-12">
+          <div aria-hidden="true" className="glow animate-breathe absolute -top-1/2 left-1/2 h-full w-2/3" />
           <h2 className="relative text-4xl font-semibold tracking-tight sm:text-5xl">
             Stop guessing. <span className="font-serif font-normal italic">Start shipping.</span>
           </h2>
