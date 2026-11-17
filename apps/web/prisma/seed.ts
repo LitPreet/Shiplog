@@ -1,6 +1,6 @@
-// Creates a demo project + sample feedback so the widget has data to show.
-// Run with: npm run db:seed
-import { PrismaClient } from "@prisma/client";
+// Creates a demo account, a demo project and realistic sample feedback.
+// Run with: npm run db:seed (safe to re-run: existing data is left alone).
+import { PrismaClient, type FeedbackStatus } from "@prisma/client";
 import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
@@ -8,6 +8,22 @@ const prisma = new PrismaClient();
 // Sign in to the dashboard with these.
 const DEMO_EMAIL = "demo@shiplog.dev";
 const DEMO_PASSWORD = "demo12345";
+
+const PLANS = ["Free", "Pro", "Business"];
+
+type SeedIdea = { title: string; description?: string; status?: FeedbackStatus; votes: number; daysAgo: number; plan?: string; page?: string };
+
+const IDEAS: SeedIdea[] = [
+  { title: "Export reports to Excel", description: "Finance needs .xlsx exports for month-end close. CSV breaks our currency formatting.", status: "IN_PROGRESS", votes: 42, daysAgo: 21, plan: "Business", page: "/reports" },
+  { title: "Recurring invoices", description: "We bill the same 30 retainer clients every month. Let us schedule them.", status: "PLANNED", votes: 37, daysAgo: 18, plan: "Pro", page: "/invoices" },
+  { title: "Slack alerts when an invoice is paid", status: "DONE", votes: 29, daysAgo: 30, plan: "Pro", page: "/settings/integrations" },
+  { title: "Partial payments", description: "Some customers pay in two or three instalments.", status: "PLANNED", votes: 24, daysAgo: 12, plan: "Business", page: "/payments" },
+  { title: "Dark mode", description: "Late-night bookkeeping is real.", status: "DONE", votes: 19, daysAgo: 40, plan: "Free" },
+  { title: "Multi-currency support", description: "Half our customers are in the EU.", votes: 16, daysAgo: 6, plan: "Business", page: "/invoices/new" },
+  { title: "Custom invoice templates with our logo", votes: 11, daysAgo: 4, plan: "Pro", page: "/settings/branding" },
+  { title: "Bulk-send payment reminders", votes: 7, daysAgo: 2, plan: "Free", page: "/invoices" },
+  { title: "Crypto payments", votes: 2, daysAgo: 9, status: "CLOSED", plan: "Free" },
+];
 
 async function main() {
   const user = await prisma.user.upsert({
@@ -20,29 +36,45 @@ async function main() {
     where: { publicKey: "pk_demo_123" },
     update: {},
     create: {
-      name: "Demo SaaS",
+      name: "Acme Invoices",
       ownerId: user.id,
       publicKey: "pk_demo_123",
+      // The widget's dev server (the demo "customer website").
+      allowedOrigins: ["http://localhost:5173"],
+      widgetTitle: "Help shape Acme Invoices",
+      widgetSubtitle: "Vote on ideas or suggest your own.",
+      accentColor: "#4338ca",
+      titlePlaceholder: "e.g. Recurring invoices",
       // Shows off custom form fields in the widget.
       formFields: [
-        { id: "plan", label: "Which plan are you on?", type: "select", required: true, options: ["Free", "Pro", "Business"] },
+        { id: "plan", label: "Which plan are you on?", type: "select", required: true, options: PLANS },
         { id: "email", label: "Email for updates", type: "email", required: false, placeholder: "you@company.com" },
       ],
-      // The widget's dev server (the fake "customer website").
-      allowedOrigins: ["http://localhost:5173"],
     },
   });
 
   const count = await prisma.feedback.count({ where: { projectId: project.id } });
   if (count === 0) {
-    await prisma.feedback.createMany({
-      data: [
-        { projectId: project.id, title: "Export reports to Excel", description: "We need .xlsx exports for finance.", voteCount: 0, visitorId: "seed", status: "PLANNED" },
-        { projectId: project.id, title: "Dark mode", visitorId: "seed" },
-        { projectId: project.id, title: "Slack notifications for new invoices", visitorId: "seed", status: "IN_PROGRESS" },
-      ],
-    });
+    for (const idea of IDEAS) {
+      const createdAt = new Date(Date.now() - idea.daysAgo * 24 * 60 * 60 * 1000);
+      await prisma.feedback.create({
+        data: {
+          projectId: project.id,
+          title: idea.title,
+          description: idea.description,
+          status: idea.status ?? "OPEN",
+          visitorId: "seed-0",
+          pageUrl: idea.page ? `https://app.acme-invoices.dev${idea.page}` : undefined,
+          answers: idea.plan ? [{ fieldId: "plan", label: "Which plan are you on?", value: idea.plan }] : [],
+          createdAt,
+          // Real Vote rows, so voteCount matches the votes table exactly.
+          voteCount: idea.votes,
+          votes: { create: Array.from({ length: idea.votes }, (_, i) => ({ visitorId: `seed-${i}`, createdAt })) },
+        },
+      });
+    }
   }
+
   console.log(`Seeded project "${project.name}" with key ${project.publicKey}`);
   console.log(`Dashboard login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 }

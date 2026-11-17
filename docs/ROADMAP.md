@@ -10,7 +10,7 @@ owner dashboard with status changes.
 - [x] **Configurable widget**: heading, colour, launcher text, custom form fields (validated server-side)
 - [ ] Password reset + email verification
 - [ ] **Identified users**: host app passes a signed user ID (HMAC) so votes follow real accounts
-- [ ] Widget theme option: `data-shiplog-theme="light|dark|auto"`
+- [x] Widget theme: light / dark / auto, chosen in the dashboard
 - [ ] Playwright end-to-end tests + GitHub Actions CI
 
 ## Phase 3: The differentiators
@@ -23,5 +23,6 @@ owner dashboard with status changes.
 
 ## Phase 4: Launch
 - [ ] Deploy (Vercel + Neon/Supabase Postgres), widget on a CDN
-- [ ] Landing page + waitlist, Stripe billing
+- [x] Landing page
+- [ ] Waitlist, Stripe billing
 - [ ] Redis rate limiting, error monitoring (Sentry)

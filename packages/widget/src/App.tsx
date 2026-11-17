@@ -5,7 +5,7 @@ const STATUS_LABEL: Record<FeedbackStatus, string> = {
   OPEN: "Open",
   PLANNED: "Planned",
   IN_PROGRESS: "In progress",
-  DONE: "Done",
+  DONE: "Shipped",
   CLOSED: "Closed",
 };
 

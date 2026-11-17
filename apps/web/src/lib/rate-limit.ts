@@ -1,7 +1,7 @@
 // Simple "fixed window" rate limiter: at most `limit` requests per `windowMs`
 // for each key (e.g. "submit:<ip>").
 //
-// LIMITATION (good interview talking point): this lives in server memory, so it
+// LIMITATION: this lives in server memory, so it
 // resets on restart and isn't shared between multiple server instances. In
 // production you'd move it to Redis (INCR + EXPIRE) so all instances share
 // one counter.

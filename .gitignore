@@ -9,3 +9,6 @@ out
 coverage
 *.tsbuildinfo
 next-env.d.ts
+
+# Personal notes (kept locally, not published)
+private-notes/

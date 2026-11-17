@@ -7,6 +7,7 @@
 ┌──────────────────────────────────┐            ┌─────────────────────────────────────┐
 │  <script src=".../widget.js"     │  1. load   │  /widget.js  (static file)          │
 │     data-shiplog-key="pk_..">   ─┼───────────▶│                                     │
+│                                  │            │  /api/v1/config        GET          │
 │                                  │            │  /api/v1/feedback      GET, POST    │
 │  ┌─ #shiplog-root ────────────┐  │  2. fetch  │  /api/v1/feedback/:id/vote  POST    │
 │  │  shadow root               │◀─┼───────────▶│      │                              │
@@ -27,8 +28,8 @@ There are **two audiences** and they talk to the server differently:
 |---|---|---|
 | Runs on | the customer's domain | our domain |
 | Talks via | public REST API + CORS | Server Components + Server Actions |
-| Identity | anonymous `visitorId` in localStorage | (Phase 2: real login) |
-| Trust level | untrusted, public key only | trusted (once auth exists) |
+| Identity | anonymous `visitorId` in localStorage | email + password account, session cookie |
+| Trust level | untrusted, public key only | trusted, but only for projects they own |
 
 ## Data model
 
