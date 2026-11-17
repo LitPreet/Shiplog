@@ -28,6 +28,14 @@ const IDEAS: SeedIdea[] = [
 const DEMO_ORIGINS = ["http://localhost:5173", ...(process.env.APP_URL ? [new URL(process.env.APP_URL).origin] : [])];
 
 async function main() {
+  // Say which database we're about to write to (host only, never the password).
+  const target = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : "(DATABASE_URL not set)";
+  console.log(`Seeding database at ${target}`);
+  // APP_URL means "seed the deployed app". Refuse if we'd write to localhost.
+  if (process.env.APP_URL && /^(localhost|127\.0\.0\.1)(:|$)/.test(target)) {
+    throw new Error("APP_URL is set but DATABASE_URL points at localhost. Pass the Neon URL in the same command.");
+  }
+
   const user = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
     update: {},
