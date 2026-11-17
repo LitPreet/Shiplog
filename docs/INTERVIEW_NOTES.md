@@ -43,11 +43,41 @@ headers, the browser first sends an OPTIONS preflight. We answer it, then the re
 checked against the project's allowed origins, and the response includes
 `Access-Control-Allow-Origin` with `Vary: Origin`.
 
+**Q: How does auth work? Why not a library?**
+Email + password, hashed with scrypt (salted, memory-hard), compared with `timingSafeEqual`.
+On login we create a random token, put it in an httpOnly SameSite=Lax cookie, and store only its
+SHA-256 in a `Session` table, so a DB leak can't be replayed as logins. I chose DB sessions over JWTs
+because logout and revocation are instant. I wrote it by hand to show I understand it; in a team
+I'd likely use Auth.js or a provider and add OAuth, email verification and password reset.
+
+**Q: What stops one owner from editing another owner's project?**
+Every Server Action and page starts with `requireProject(id)`, which queries
+`where: { id, ownerId: currentUser.id }` and returns 404 otherwise (404, not 403, so you can't
+probe which IDs exist). Middleware is just a fast redirect, not the security check, because Server
+Actions are public POST endpoints.
+
+**Q: The key is in the page source. Can't anyone paste it on their site?**
+No: requests are checked against the project's allowed origins, which the browser sets and page JS
+can't fake. For curl-style abuse there's per-IP rate limiting, low-privilege keys, key rotation and
+a pause switch. Accounts are capped at 5 projects to limit signup abuse.
+
+**Q: How do custom form fields work?**
+The owner's field config is JSON on the project, validated with zod when saved. The widget
+fetches it from `GET /api/v1/config` and renders it. On submit the server validates the answers
+against the same config (required, email format, dropdown value must be an allowed option) and
+stores a snapshot `{fieldId, label, value}`, so old feedback still reads correctly after a field
+is renamed or deleted.
+
+**Q: You changed the schema with live data. How?**
+`ownerId` became required, but existing projects had no owner. I edited the generated migration
+to add the column as nullable, backfill orphans to a demo user, then set NOT NULL, instead of
+resetting the database.
+
 **Q: How would you scale it?**
 Serve `widget.js` from a CDN with long caching and versioned filenames. Move the rate limiter to
 Redis so all server instances share counters. Cache the public board for a few seconds per project
-(it's read-heavy). Add a read replica if needed. The widget already avoids load by fetching only
-when opened.
+(it's read-heavy). Add a read replica if needed. The widget makes one small request per page load
+(its config, browser-cached for 60s) and loads the board only when opened.
 
 **Q: What would you do differently?**
 Add end-to-end tests (Playwright) earlier, and design the identified-users flow from day one.

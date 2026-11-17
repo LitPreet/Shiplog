@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import { Logo } from "@/components/logo";
+import { getCurrentUser } from "@/lib/auth";
 import { WidgetPlayground } from "@/components/marketing/widget-playground";
 import { ArrowRight, Bolt, Code, Gauge, Globe, Layers, Message, Rocket, Shield } from "@/components/icons";
 
@@ -19,10 +20,13 @@ const FEATURES = [
   { icon: Bolt, title: "~9 KB gzipped", body: "Preact under the hood, with lazy loading. Nothing is fetched until the panel opens." },
   { icon: Globe, title: "Origin-locked keys", body: "Public keys only work on domains you allow, with rate limits on every write." },
   { icon: Gauge, title: "Optimistic voting", body: "Votes feel instant. If a request fails, only that item rolls back." },
-  { icon: Layers, title: "Server-first dashboard", body: "Triage and change status in one click. Built on React Server Components." },
+  { icon: Layers, title: "Your form, your questions", body: "Add dropdowns, emails or numbers to the form. Validated on the server against your config." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+  const cta = user ? { href: "/dashboard", label: "Open the dashboard" } : { href: "/signup", label: "Start for free" };
+
   return (
     <div className="min-h-screen overflow-x-clip">
       {/* Nav */}
@@ -36,12 +40,26 @@ export default function Home() {
             <a href="#features" className="hidden rounded-md px-3 py-2 text-muted transition hover:text-foreground sm:block">
               Features
             </a>
-            <Link
-              href="/dashboard"
-              className="ml-2 inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 font-medium text-background transition hover:opacity-85"
-            >
-              Dashboard <ArrowRight />
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="ml-2 inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 font-medium text-background transition hover:opacity-85"
+              >
+                Dashboard <ArrowRight />
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="rounded-md px-3 py-2 text-muted transition hover:text-foreground">
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="ml-1 inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 font-medium text-background transition hover:opacity-85"
+                >
+                  Get started <ArrowRight />
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -65,10 +83,10 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/dashboard"
+                href={cta.href}
                 className="group inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 font-semibold text-accent-ink shadow-[0_10px_30px_-10px_var(--accent)] transition hover:brightness-110"
               >
-                Open the dashboard
+                {cta.label}
                 <ArrowRight className="transition group-hover:translate-x-0.5" />
               </Link>
               <a
@@ -171,10 +189,10 @@ export default function Home() {
           </h2>
           <p className="relative mx-auto mt-4 max-w-md text-background/60">See every request, ranked by the people who want it.</p>
           <Link
-            href="/dashboard"
+            href={cta.href}
             className="relative mt-8 inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-accent-ink transition hover:brightness-110"
           >
-            Open the dashboard <ArrowRight />
+            {cta.label} <ArrowRight />
           </Link>
         </div>
       </section>

@@ -10,17 +10,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// A person who signs in to the dashboard and owns projects.
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  // scrypt hash, format "salt:hash" (see src/lib/password.ts). Never the password.
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  projects     Project[]
+  sessions     Session[]
+}
+
+// Server-side sessions. The browser cookie holds a random token; we store only
+// its SHA-256 hash, so a leaked DB dump can't be replayed as live logins.
+// Logging out (or "sign out everywhere") is just deleting rows.
+model Session {
+  id        String   @id // sha256(token)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 // A Project = one customer website that embeds the widget.
 model Project {
   id             String     @id @default(cuid())
   name           String
+  ownerId        String
+  owner          User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   // Goes in the <script data-key="..."> tag. It is PUBLIC (anyone can read it
   // in page source), so it only unlocks low-risk actions: list/submit/vote.
   publicKey      String     @unique
   // Browser origins allowed to use this key, e.g. "https://acme.com".
   allowedOrigins String[]
+  // Kill switch: when false the API rejects every widget request.
+  isActive       Boolean    @default(true)
+
+  // Widget appearance + form, editable from the dashboard. The widget fetches
+  // these from GET /api/v1/config, so owners change them without re-pasting.
+  widgetTitle      String @default("Share feedback")
+  widgetSubtitle   String @default("Vote on ideas or suggest your own.")
+  launcherText     String @default("Feedback")
+  accentColor      String @default("#ff5b2e")
+  titleLabel       String @default("Your idea")
+  titlePlaceholder String @default("e.g. Export reports to Excel")
+  showDescription  Boolean @default(true)
+  // Extra owner-defined form fields: FormField[] (see src/lib/form-fields.ts).
+  // JSON because the shape is per-project and always read/written as a whole.
+  formFields       Json   @default("[]")
+
   createdAt      DateTime   @default(now())
   feedback       Feedback[]
+
+  @@index([ownerId])
 }
 
 enum FeedbackStatus {
@@ -46,6 +91,10 @@ model Feedback {
   visitorId   String
   // Page the feedback was submitted from.
   pageUrl     String?
+  // Answers to the project's custom fields, as a snapshot:
+  // [{ fieldId, label, value }]. Storing the label means old feedback still
+  // reads correctly after the owner renames or deletes a field.
+  answers     Json           @default("[]")
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   votes       Vote[]

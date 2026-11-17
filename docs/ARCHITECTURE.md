@@ -73,6 +73,27 @@ The key is **public by design**. Anyone can view the page source and copy it. La
 3. **Rate limiting** per IP, because non-browser clients (curl) *can* fake `Origin`.
 4. **Input validation** with zod: length limits, types, URL format.
 5. **Cross-project checks.** Voting verifies that the feedback belongs to the key's project.
+6. **Kill switch + rotation.** Owners can pause a project (every request gets 403) or rotate the
+   key (the old one dies instantly) from the dashboard.
+7. **Custom fields are validated against the owner's config**, not the widget: a dropdown answer
+   must be one of the configured options, required fields are enforced, unknown keys are dropped.
+   Answers are never returned by the public API (they can contain emails).
+
+## Owner auth (dashboard)
+
+Hand-written session auth, no library, so every step is explainable:
+
+| Step | What happens |
+|---|---|
+| Sign up | zod validation → scrypt hash (random salt) → `User` row → session |
+| Session | 32 random bytes in an `httpOnly`, `SameSite=Lax` cookie; DB stores only `sha256(token)` |
+| Request | `getCurrentUser()` hashes the cookie, looks up an unexpired `Session` (memoised per request) |
+| Authorization | `requireProject(id)` loads the project **only if `ownerId` = current user**, else 404 |
+| Sign out | delete the `Session` row + clear the cookie (instant revocation, unlike a JWT) |
+
+`middleware.ts` only checks that a cookie *exists* (fast redirect to `/login`). It is not the
+security boundary: every page and every Server Action calls `requireUser`/`requireProject`, because
+Server Actions are public HTTP endpoints anyone can call.
 
 ## Why these technologies
 

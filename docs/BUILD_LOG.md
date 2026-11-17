@@ -79,3 +79,26 @@ is copied to `apps/web/public/` so Next.js serves it at `/widget.js`.
 - `status-select.tsx` is the only **Client Component** (it needs `onChange`). It calls a
   **Server Action** (`actions.ts`) and then `revalidatePath` re-renders the page with fresh data.
 - ⚠️ No auth yet. That is the first item in Phase 2.
+
+### Step 7: Accounts, project management, configurable widget
+**Why:** without login anyone could open the dashboard and change any project, and owners had no
+way to manage origins or adapt the form to their product.
+
+| Piece | Where |
+|---|---|
+| `User`, `Session` models; `Project.ownerId`, widget settings, `formFields`; `Feedback.answers` | `prisma/schema.prisma` |
+| Hand-edited migration that backfills existing projects to a demo user | `prisma/migrations/*_auth_and_widget_config` |
+| scrypt password hashing | `src/lib/password.ts` |
+| Sessions, `requireUser`, `requireProject` (ownership) | `src/lib/auth.ts` |
+| Cookie-presence redirect for `/dashboard` | `src/middleware.ts` |
+| Sign up / sign in pages + actions (rate limited, no account enumeration, safe `next` redirect) | `src/app/(auth)` |
+| Create project (5 per account), settings page: install, widget editor with live preview, origins, key rotation, pause, delete | `src/app/dashboard` |
+| Field config schema + server-side answer validation | `src/lib/form-fields.ts` |
+| `GET /api/v1/config`; paused projects rejected in `widget-auth.ts` | `src/app/api/v1` |
+| Widget renders heading, launcher text, colour and custom fields from config | `packages/widget/src` |
+
+**Tested:** with curl (wrong origin → 403, bad key → 401, paused → 403, missing required field,
+dropdown value not in options, and bad email → 400, unknown answer keys dropped), plus a Chrome run
+covering signup, short password rejected by the server, project creation, origin normalisation,
+saving widget settings, a second user getting 404 on the first user's project, sign out, wrong
+password, and answers showing in the dashboard.

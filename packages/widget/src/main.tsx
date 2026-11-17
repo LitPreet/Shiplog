@@ -10,16 +10,29 @@ import styles from "./styles.css?inline";
 // first synchronous run of the script.
 const config = readConfig();
 
-function mount() {
+async function mount() {
   if (!config) return;
 
   // Guard against the customer pasting the script twice.
   if (document.getElementById("shiplog-root")) return;
 
+  // Fetch the owner's settings first. If the key is wrong, the origin isn't
+  // allowed, or the project is paused, render NOTHING: a broken widget on a
+  // customer's site is worse than no widget.
+  const api = createApi(config);
+  let settings;
+  try {
+    settings = await api.config();
+  } catch (err) {
+    console.warn(`[shiplog] Widget not loaded: ${(err as Error).message}`);
+    return;
+  }
+  if (document.getElementById("shiplog-root")) return; // raced with a second copy
+
   // 1. A plain host element on the customer's page...
   const host = document.createElement("div");
   host.id = "shiplog-root";
-  host.style.setProperty("--sl-accent", config.color);
+  host.style.setProperty("--sl-accent", config.color ?? settings.accentColor);
   document.body.appendChild(host);
 
   // 2. ...with a Shadow DOM inside it. CSS can't cross the shadow boundary in
@@ -33,7 +46,7 @@ function mount() {
   const container = document.createElement("div");
   shadow.appendChild(container);
 
-  render(<App api={createApi(config)} />, container);
+  render(<App api={api} settings={settings} />, container);
 }
 
 // The script may run in <head> before <body> exists.

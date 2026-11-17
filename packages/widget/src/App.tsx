@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { Api, FeedbackItem, FeedbackStatus } from "./api";
+import type { Api, FeedbackItem, FeedbackStatus, FormField, NewIdea, WidgetConfig } from "./api";
 
 const STATUS_LABEL: Record<FeedbackStatus, string> = {
   OPEN: "Open",
@@ -11,7 +11,7 @@ const STATUS_LABEL: Record<FeedbackStatus, string> = {
 
 type Tab = "board" | "new";
 
-export function App({ api }: { api: Api }) {
+export function App({ api, settings }: { api: Api; settings: WidgetConfig }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("board");
   const [items, setItems] = useState<FeedbackItem[] | null>(null); // null = not loaded yet
@@ -72,7 +72,7 @@ export function App({ api }: { api: Api }) {
     }
   }
 
-  async function handleCreate(input: { title: string; description?: string }) {
+  async function handleCreate(input: NewIdea) {
     const { item } = await api.create(input); // errors are shown by the form
     setItems((cur) => [item, ...(cur ?? [])]);
     setTab("board");
@@ -84,7 +84,10 @@ export function App({ api }: { api: Api }) {
       {open && (
         <section class="panel" role="dialog" aria-label="Feedback">
           <header class="panel-header">
-            <strong>Feedback</strong>
+            <div>
+              <strong>{settings.title}</strong>
+              {settings.subtitle && <p class="subtitle">{settings.subtitle}</p>}
+            </div>
             <button class="icon-btn" aria-label="Close" onClick={() => setOpen(false)}>
               ✕
             </button>
@@ -103,7 +106,7 @@ export function App({ api }: { api: Api }) {
             {tab === "board" ? (
               <Board items={items} error={loadError} onRetry={load} onVote={handleVote} onSuggest={() => setTab("new")} />
             ) : (
-              <NewIdeaForm onSubmit={handleCreate} />
+              <NewIdeaForm settings={settings} onSubmit={handleCreate} />
             )}
           </div>
 
@@ -118,7 +121,7 @@ export function App({ api }: { api: Api }) {
         aria-label={open ? "Close feedback" : "Open feedback"}
         onClick={() => setOpen((o) => !o)}
       >
-        {open ? "✕" : "💬 Feedback"}
+        {open ? "✕" : `💬 ${settings.launcherText}`}
       </button>
     </div>
   );
@@ -188,22 +191,35 @@ function Board(props: {
   );
 }
 
-function NewIdeaForm({ onSubmit }: { onSubmit: (input: { title: string; description?: string }) => Promise<void> }) {
+function NewIdeaForm({ settings, onSubmit }: { settings: WidgetConfig; onSubmit: (input: NewIdea) => Promise<void> }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  // Custom field values keyed by field id, exactly what the API expects.
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(e: Event) {
     e.preventDefault();
     if (title.trim().length < 3) {
-      setError("Please write a short title (3+ characters).");
+      setError(`${settings.titleLabel}: please write at least 3 characters.`);
+      return;
+    }
+    // Quick client-side check for a friendlier message. The server validates
+    // again against the same config; this is UX, not security.
+    const missing = settings.fields.find((f) => f.required && !answers[f.id]?.trim());
+    if (missing) {
+      setError(`${missing.label} is required.`);
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      await onSubmit({ title: title.trim(), description: description.trim() || undefined });
+      await onSubmit({
+        title: title.trim(),
+        description: (settings.showDescription && description.trim()) || undefined,
+        answers,
+      });
     } catch (err) {
       setError((err as Error).message);
       setSubmitting(false);
@@ -211,31 +227,89 @@ function NewIdeaForm({ onSubmit }: { onSubmit: (input: { title: string; descript
   }
 
   return (
-    <form class="form" onSubmit={submit}>
+    <form class="form" onSubmit={submit} noValidate>
       <label>
-        <span>Your idea</span>
+        <span>
+          {settings.titleLabel} <span class="req" aria-hidden="true">*</span>
+        </span>
         <input
           value={title}
           maxLength={120}
-          placeholder="e.g. Export reports to Excel"
+          required
+          placeholder={settings.titlePlaceholder}
           onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
           autoFocus
         />
       </label>
-      <label>
-        <span>Details (optional)</span>
-        <textarea
-          rows={4}
-          value={description}
-          maxLength={2000}
-          placeholder="What problem would this solve for you?"
-          onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+      {settings.showDescription && (
+        <label>
+          <span>
+            Details <span class="hint">optional</span>
+          </span>
+          <textarea
+            rows={3}
+            value={description}
+            maxLength={2000}
+            placeholder="What problem would this solve for you?"
+            onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+          />
+        </label>
+      )}
+      {settings.fields.map((field) => (
+        <CustomField
+          key={field.id}
+          field={field}
+          value={answers[field.id] ?? ""}
+          onChange={(v) => setAnswers((cur) => ({ ...cur, [field.id]: v }))}
         />
-      </label>
+      ))}
       {error && <p class="error" role="alert">{error}</p>}
       <button class="btn primary" type="submit" disabled={submitting}>
         {submitting ? "Posting…" : "Post idea"}
       </button>
     </form>
+  );
+}
+
+// Renders one owner-defined question. One component per type keeps the
+// markup accessible (a real <label> around every control).
+function CustomField({ field, value, onChange }: { field: FormField; value: string; onChange: (v: string) => void }) {
+  const onInput = (e: Event) => onChange((e.target as HTMLInputElement).value);
+  const common = { value, required: field.required, placeholder: field.placeholder ?? "" };
+
+  let control;
+  if (field.type === "textarea") {
+    control = <textarea rows={3} maxLength={2000} {...common} onInput={onInput} />;
+  } else if (field.type === "select") {
+    control = (
+      <select value={value} required={field.required} onChange={onInput}>
+        <option value="">Choose…</option>
+        {field.options?.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
+  } else {
+    control = (
+      <input
+        type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
+        inputMode={field.type === "number" ? "decimal" : undefined}
+        maxLength={300}
+        {...common}
+        onInput={onInput}
+      />
+    );
+  }
+
+  return (
+    <label>
+      <span>
+        {field.label}{" "}
+        {field.required ? <span class="req" aria-hidden="true">*</span> : <span class="hint">optional</span>}
+      </span>
+      {control}
+    </label>
   );
 }

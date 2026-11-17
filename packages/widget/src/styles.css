@@ -46,7 +46,7 @@ button { cursor: pointer; font: inherit; }
   font-weight: 600;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
-.launcher:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+.launcher:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid var(--sl-accent);
   outline-offset: 2px;
 }
@@ -82,6 +82,8 @@ button { cursor: pointer; font: inherit; }
   border-bottom: 1px solid var(--sl-border);
   font-size: 15px;
 }
+.panel-header strong { display: block; }
+.subtitle { margin: 2px 0 0; font-size: 12.5px; color: var(--sl-muted); }
 .icon-btn { background: none; border: none; color: var(--sl-muted); font-size: 16px; padding: 4px; }
 
 .tabs { display: flex; gap: 4px; padding: 8px 12px 0; border-bottom: 1px solid var(--sl-border); }
@@ -146,7 +148,7 @@ button { cursor: pointer; font: inherit; }
 
 .form { display: flex; flex-direction: column; gap: 12px; }
 .form label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
-.form input, .form textarea {
+.form input, .form textarea, .form select {
   width: 100%;
   padding: 9px 10px;
   border: 1px solid var(--sl-border);
@@ -156,6 +158,9 @@ button { cursor: pointer; font: inherit; }
   font-size: 14px;
   resize: vertical;
 }
+.form label > span:first-child { display: flex; gap: 4px; align-items: baseline; }
+.req { color: #dc2626; }
+.hint { color: var(--sl-muted); font-weight: 400; font-size: 12px; }
 .error { color: #dc2626; margin: 0; font-size: 13px; }
 
 .btn {

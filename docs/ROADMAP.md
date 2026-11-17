@@ -5,8 +5,10 @@ Widget (board, submit, vote) Â· public API with key/origin/rate-limit security Â
 owner dashboard with status changes.
 
 ## Phase 2: Make it a real product
-- [ ] **Owner auth** (Auth.js / email magic link); projects belong to users
-- [ ] Create projects + manage allowed origins from the dashboard
+- [x] **Owner auth**: email + password, DB sessions, httpOnly cookie; projects belong to users
+- [x] Create projects + manage allowed origins from the dashboard, rotate keys, pause widget
+- [x] **Configurable widget**: heading, colour, launcher text, custom form fields (validated server-side)
+- [ ] Password reset + email verification
 - [ ] **Identified users**: host app passes a signed user ID (HMAC) so votes follow real accounts
 - [ ] Widget theme option: `data-shiplog-theme="light|dark|auto"`
 - [ ] Playwright end-to-end tests + GitHub Actions CI

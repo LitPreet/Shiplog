@@ -4,7 +4,8 @@
 export type Config = {
   key: string;
   apiBase: string;
-  color: string;
+  // Optional override; normally the accent comes from the dashboard settings.
+  color?: string;
 };
 
 export function readConfig(): Config | null {
@@ -25,5 +26,5 @@ export function readConfig(): Config | null {
   // customers normally don't need to set data-shiplog-api at all.
   const apiBase = script.dataset.shiplogApi ?? new URL(script.src, location.href).origin;
 
-  return { key, apiBase: apiBase.replace(/\/$/, ""), color: script.dataset.shiplogColor ?? "#4f46e5" };
+  return { key, apiBase: apiBase.replace(/\/$/, ""), color: script.dataset.shiplogColor };
 }

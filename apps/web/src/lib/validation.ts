@@ -11,6 +11,9 @@ export const createFeedbackSchema = z.object({
   title: z.string().trim().min(3, "Title is too short").max(120),
   description: z.string().trim().max(2000).optional(),
   pageUrl: z.string().url().max(2048).optional(),
+  // Custom field answers keyed by field id. Shape is checked here; the VALUES
+  // are checked against the project's own field config in form-fields.ts.
+  answers: z.record(z.string().max(40), z.union([z.string().max(2000), z.number()])).optional(),
 });
 
 export const voteSchema = z.object({

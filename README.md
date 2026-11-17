@@ -24,14 +24,16 @@ npm install                 # install all workspaces
 cp apps/web/.env.example apps/web/.env
 npm run db:up               # start Postgres in Docker (port 5433)
 npm run db:migrate          # create tables
-npm run db:seed             # demo project (key: pk_demo_123) + sample ideas
+npm run db:seed             # demo user, demo project (key: pk_demo_123) + sample ideas
 
 npm run dev:web             # terminal 1 -> API + dashboard on http://localhost:3000
 npm run dev:widget          # terminal 2 -> fake customer site on http://localhost:5173
 ```
 
 - Open **http://localhost:5173**: a fake customer website with the widget embedded. Post ideas, vote.
-- Open **http://localhost:3000/dashboard**: the owner side. Change an idea's status and the widget shows it.
+- Open **http://localhost:3000/dashboard** and sign in as `demo@shiplog.dev` / `demo12345` (or sign up).
+  Change an idea's status and the widget shows it. Under **Widget & settings** you can change the
+  heading, colour and form questions, manage allowed websites, rotate the key, or pause the widget.
 
 Build the production widget: `npm run build:widget`. That writes `apps/web/public/widget.js`, served at `/widget.js`.
 

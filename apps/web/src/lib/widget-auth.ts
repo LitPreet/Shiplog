@@ -24,6 +24,11 @@ export async function authenticateWidget(req: Request): Promise<AuthResult> {
     return { ok: false, response: json(req, { error: "Unknown project key" }, 401) };
   }
 
+  // Owner paused the widget from the dashboard.
+  if (!project.isActive) {
+    return { ok: false, response: json(req, { error: "This feedback board is paused" }, 403) };
+  }
+
   const origin = req.headers.get("origin");
   if (!origin || !project.allowedOrigins.includes(origin)) {
     return {
