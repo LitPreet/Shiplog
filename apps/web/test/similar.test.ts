@@ -8,21 +8,29 @@ const candidates: SimilarIdea[] = [
   { id: "d", title: "Partial payments", voteCount: 24, status: "OPEN" },
 ];
 
+// Model output shape: { scores: { "<label>": 0-3 } }. m(...) marks labels as 3 ("same request").
+const m = (...labels: string[]) => ({ scores: Object.fromEntries(labels.map((l) => [l, 3])) });
+
 describe("pickDuplicates (prompt-injection guard)", () => {
-  it("returns only candidates the model selected, in its order", () => {
-    expect(pickDuplicates({ duplicateIds: ["c", "a"] }, candidates).map((d) => d.id)).toEqual(["c", "a"]);
+  it("maps short labels back to candidates and keeps only score 3", () => {
+    const raw = { scores: { "1": 3, "2": 2, "3": 3, "4": 0 } };
+    expect(pickDuplicates(raw, candidates).map((d) => d.id)).toEqual(["a", "c"]);
   });
 
-  it("drops ids that were never offered (made up or from another project)", () => {
-    expect(pickDuplicates({ duplicateIds: ["other-project-id", "a", "'; DROP TABLE"] }, candidates).map((d) => d.id)).toEqual(["a"]);
+  it("treats all-low scores as no duplicate", () => {
+    expect(pickDuplicates({ scores: { "1": 2, "2": 1, "3": 0, "4": 0 } }, candidates)).toEqual([]);
   });
 
-  it("caps at 3 results and removes repeats", () => {
-    expect(pickDuplicates({ duplicateIds: ["a", "a", "b", "c", "d"] }, candidates)).toHaveLength(3);
+  it("drops labels that were never offered (out of range, real db ids, junk)", () => {
+    expect(pickDuplicates(m("cmwk-real-db-id", "99", "0", "1", "'; DROP TABLE"), candidates).map((d) => d.id)).toEqual(["a"]);
+  });
+
+  it("caps at 3 results and ignores padded duplicate labels", () => {
+    expect(pickDuplicates({ scores: { "1": 3, " 1": 3, "2": 3, "3": 3, "4": 3 } }, candidates)).toHaveLength(3);
   });
 
   it("returns nothing for malformed model output", () => {
-    for (const bad of [null, "a", { duplicateIds: "a" }, { ids: ["a"] }, { duplicateIds: [1, 2] }]) {
+    for (const bad of [null, "a", { scores: "a" }, { duplicateIds: ["1"] }, { scores: { "1": "high" } }]) {
       expect(pickDuplicates(bad, candidates)).toEqual([]);
     }
   });
@@ -34,6 +42,8 @@ describe("buildDuplicatePrompt", () => {
     const parsed = JSON.parse(buildDuplicatePrompt({ title: sneaky }, candidates));
     expect(parsed.new.title).toBe(sneaky);
     expect(parsed.existing).toHaveLength(4);
-    expect(parsed.existing[0]).toEqual({ id: "a", title: "Export reports to Excel" });
+    expect(parsed.existing[0]).toEqual({ id: "1", title: "Export reports to Excel" });
+    // Real database ids never reach the model.
+    expect(JSON.stringify(parsed)).not.toContain('"a"');
   });
 });

@@ -44,6 +44,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ project
       headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
     });
   } catch (err) {
+    console.error(`[ai] summary failed: ${(err as Error).message}`);
     const busy = err instanceof AiError && err.status === 429;
     return Response.json(
       { error: busy ? "The AI provider is busy (free-tier limit). Try again in a minute." : "The AI service is unavailable right now." },

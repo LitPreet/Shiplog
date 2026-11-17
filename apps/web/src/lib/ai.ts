@@ -9,18 +9,22 @@
 // non-AI behaviour. The app never depends on the model being up.
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
-const DEFAULT_MODEL = "llama-3.1-8b-instant";
+const DEFAULT_MODEL = "qwen/qwen3.8-27b"; // Groq. Evaluated 11/12 on scripts/eval-duplicates.ts, ~0.25s.
 
 export type AiConfig = { baseUrl: string; model: string; apiKey?: string };
 
+// Env values pasted into dashboards often carry stray quotes or whitespace
+// ("gsk_..." or a trailing newline), which silently breaks auth.
+const clean = (v: string | undefined) => v?.trim().replace(/^["']|["']$/g, "").trim() || undefined;
+
 export function aiConfig(): AiConfig | null {
-  const apiKey = process.env.AI_API_KEY || undefined;
-  const baseUrl = process.env.AI_BASE_URL || (apiKey ? GROQ_BASE_URL : "");
+  const apiKey = clean(process.env.AI_API_KEY);
+  const baseUrl = clean(process.env.AI_BASE_URL) || (apiKey ? GROQ_BASE_URL : "");
   if (!baseUrl) return null;
-  return { baseUrl: baseUrl.replace(/\/$/, ""), model: process.env.AI_MODEL || DEFAULT_MODEL, apiKey };
+  return { baseUrl: baseUrl.replace(/\/$/, ""), model: clean(process.env.AI_MODEL) || DEFAULT_MODEL, apiKey };
 }
 
-type Message = { role: "system" | "user"; content: string };
+export type Message = { role: "system" | "user" | "assistant"; content: string };
 
 export class AiError extends Error {
   constructor(
@@ -42,8 +46,11 @@ async function post(cfg: AiConfig, body: object, signal: AbortSignal) {
     signal,
   });
   if (!res.ok) {
-    // 429 = provider rate limit (free tiers hit this). Never echo provider
-    // error bodies to clients; they can contain account details.
+    // Log the provider's reason server-side (Vercel → Logs) so failures are
+    // diagnosable: bad key (401), unknown model (404), rate limit (429)...
+    // Never sent to clients, and never includes our key.
+    const detail = (await res.text().catch(() => "")).slice(0, 300);
+    console.error(`[ai] ${res.status} from ${new URL(cfg.baseUrl).host} (model "${cfg.model}"): ${detail}`);
     throw new AiError(`AI provider returned ${res.status}`, res.status);
   }
   return res;

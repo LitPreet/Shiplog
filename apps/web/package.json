@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:ai": "tsx scripts/eval-duplicates.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
