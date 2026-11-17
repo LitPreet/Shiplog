@@ -11,18 +11,22 @@ owner dashboard with status changes.
 - [ ] Password reset + email verification
 - [ ] **Identified users**: host app passes a signed user ID (HMAC) so votes follow real accounts
 - [x] Widget theme: light / dark / auto, chosen in the dashboard
+- [x] Unit tests (Vitest) for streaming, prompt-injection guards and privacy filtering
 - [ ] Playwright end-to-end tests + GitHub Actions CI
 
 ## Phase 3: The differentiators
 - [ ] **"You asked, we shipped" notifications**: when status becomes DONE, voters see it in the
       widget (and optionally by email)
 - [ ] **Pin feedback to an element**: click any element on the page and attach feedback + a screenshot
-- [ ] **AI duplicate merging**: embeddings + clustering, so "export to excel" and "xlsx download"
-      become one idea
-- [ ] **AI weekly digest**: top themes, trends, and churned users who asked for X
+- [x] **AI duplicate detection**: trigram search while typing + an LLM check on submit, so
+      "xlsx download" is matched to "Export to Excel" (11/12 on a labelled eval set)
+- [x] **AI feedback summary**: streamed top themes, quick wins and a recommendation
+- [ ] **Merge duplicates** in the dashboard (move votes from one idea into another)
+- [ ] **AI weekly digest** by email: trends over time, and churned users who asked for X
 
 ## Phase 4: Launch
-- [ ] Deploy (Vercel + Neon/Supabase Postgres), widget on a CDN
+- [x] Deploy (Vercel + Neon Postgres); widget served from Vercel's CDN
 - [x] Landing page
 - [ ] Waitlist, Stripe billing
-- [ ] Redis rate limiting, error monitoring (Sentry)
+- [ ] Redis rate limiting (shared across serverless instances), error monitoring (Sentry)
+- [ ] Major upgrades: Next.js 16, Prisma 7 (clears the remaining build-time `npm audit` advisories)

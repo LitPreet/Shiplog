@@ -15,7 +15,16 @@ const instrumentSerif = Instrument_Serif({
   style: "italic",
 });
 
+// Absolute URLs for link-preview tags. Vercel sets VERCEL_PROJECT_PRODUCTION_URL;
+// APP_URL overrides it; localhost is the dev fallback.
+const siteUrl =
+  process.env.APP_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  openGraph: { type: "website", siteName: "Shiplog" },
+  twitter: { card: "summary_large_image" },
   title: {
     default: "Shiplog: in-app feedback that closes the loop",
     template: "%s · Shiplog",

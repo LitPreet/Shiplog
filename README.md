@@ -63,7 +63,7 @@ Shiplog has two sides:
   </tr>
   <tr>
     <td align="center"><b>Landing page</b> with a live, playable widget</td>
-    <td align="center"><b>Dashboard</b>: ideas ranked by demand, status changes, custom answers</td>
+    <td align="center"><b>Dashboard</b>: stats, status breakdown and a streamed AI summary of top themes</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/settings.png" alt="Widget editor with live preview" /></td>
@@ -75,11 +75,16 @@ Shiplog has two sides:
   </tr>
 </table>
 
-<p align="center">
-  <img src="docs/screenshots/widget-form.png" alt="Suggest form with custom dropdown and email fields" width="340" />
-  <br />
-  <sub>The suggest form, with two custom questions added by the owner</sub>
-</p>
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/screenshots/widget-form.png" alt="Similar ideas shown while typing" width="340" /></td>
+    <td width="50%" align="center"><img src="docs/screenshots/widget-duplicate.png" alt="AI duplicate prompt suggesting an existing idea" width="340" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>While typing</b>: similar ideas appear instantly (trigram search)</td>
+    <td align="center"><b>On submit</b>: the AI spots the same request in different words</td>
+  </tr>
+</table>
 
 ## Quick start
 
@@ -269,6 +274,6 @@ Error codes: `400` invalid input, `401` unknown key, `403` origin not allowed or
 ## Roadmap
 
 Done: the core feedback loop, owner accounts, project management, a configurable widget with
-custom fields, and themes. Next up: identified users (signed user IDs), "you asked, we shipped"
-notifications, AI duplicate merging, end-to-end tests, and deployment. See
+custom fields and themes, AI duplicate detection and summaries, and deployment. Next up: end-to-end
+tests with CI, identified users (signed user IDs), and "you asked, we shipped" notifications. See
 [docs/ROADMAP.md](docs/ROADMAP.md).

@@ -71,7 +71,7 @@ function valueSchema(field: FormField) {
     case "select":
       // Only values the owner configured: blocks arbitrary strings via the API.
       return z.enum(field.options as [string, ...string[]], {
-        errorMap: () => ({ message: `${field.label}: pick one of the options` }),
+        error: `${field.label}: pick one of the options`,
       });
     case "textarea":
       return z.string().trim().max(2000);

@@ -18,7 +18,7 @@ const STEPS = [
 const FEATURES = [
   { icon: Code, title: "One script tag", body: "No SDK, no build step. Paste it before </body> and you're live." },
   { icon: Shield, title: "Shadow DOM isolation", body: "Your CSS can't break the widget, and the widget can't break yours." },
-  { icon: Bolt, title: "~9 KB gzipped", body: "Preact under the hood, with lazy loading. Nothing is fetched until the panel opens." },
+  { icon: Bolt, title: "~11 KB gzipped", body: "Preact under the hood. One tiny config request on load; the board only loads when opened." },
   { icon: Globe, title: "Origin-locked keys", body: "Public keys only work on domains you allow, with rate limits on every write." },
   { icon: Gauge, title: "Optimistic voting", body: "Votes feel instant. If a request fails, only that item rolls back." },
   { icon: Layers, title: "Your form, your questions", body: "Add dropdowns, emails or numbers to the form. Validated on the server against your config." },
@@ -79,7 +79,7 @@ export default async function Home() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
               </span>
-              In-app feedback, open source
+              In-app feedback, now with AI
             </span>
             <h1 className="animate-slide-up mt-6 text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
               Hear users.

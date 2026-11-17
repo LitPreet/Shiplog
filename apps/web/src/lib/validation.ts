@@ -13,7 +13,12 @@ export const createFeedbackSchema = z.object({
   pageUrl: z.string().url().max(2048).optional(),
   // Custom field answers keyed by field id. Shape is checked here; the VALUES
   // are checked against the project's own field config in form-fields.ts.
-  answers: z.record(z.string().max(40), z.union([z.string().max(2000), z.number()])).optional(),
+  answers: z
+    .record(z.string().max(40), z.union([z.string().max(2000), z.number()]))
+    // A form has at most MAX_FIELDS (8) custom questions; reject oversized
+    // payloads early instead of processing thousands of keys.
+    .refine((a) => Object.keys(a).length <= 20, "Too many answers")
+    .optional(),
 });
 
 export const voteSchema = z.object({
