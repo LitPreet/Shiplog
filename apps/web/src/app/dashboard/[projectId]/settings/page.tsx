@@ -1,6 +1,6 @@
 import { requireProject } from "@/lib/auth";
 import { appUrl } from "@/lib/app-url";
-import { parseFormFields } from "@/lib/form-fields";
+import { parseFormFields, parseTheme } from "@/lib/form-fields";
 import { MAX_ORIGINS } from "@/lib/limits";
 import { CopyButton } from "@/components/copy-button";
 import { DangerZone, GeneralSettings, KeyCard, OriginsCard } from "./security";
@@ -41,6 +41,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ proje
             widgetSubtitle: project.widgetSubtitle,
             launcherText: project.launcherText,
             accentColor: project.accentColor,
+            widgetTheme: parseTheme(project.widgetTheme),
             titleLabel: project.titleLabel,
             titlePlaceholder: project.titlePlaceholder,
             showDescription: project.showDescription,

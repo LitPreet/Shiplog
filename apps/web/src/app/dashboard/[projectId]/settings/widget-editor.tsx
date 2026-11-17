@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ArrowUp, Check, Message, Plus, X } from "@/components/icons";
-import { FIELD_TYPES, FIELD_TYPE_LABEL, MAX_FIELDS, type FieldType, type FormField } from "@/lib/form-fields";
+import { FIELD_TYPES, FIELD_TYPE_LABEL, MAX_FIELDS, WIDGET_THEMES, type FieldType, type FormField, type WidgetTheme } from "@/lib/form-fields";
 import { saveWidget, type WidgetSettings } from "../actions";
+
+// Must match the palettes in packages/widget/src/styles.css.
+const PALETTES = {
+  light: { bg: "#ffffff", fg: "#111114", muted: "#6b6b76", border: "#ebe9e4", soft: "#f5f4f0" },
+  dark: { bg: "#151518", fg: "#f4f4f2", muted: "#9a9aa3", border: "#2a2a30", soft: "#1d1d21" },
+};
+const THEME_LABEL: Record<WidgetTheme, string> = { light: "Light", dark: "Dark", auto: "Auto" };
 
 const PRESETS = ["#ff5b2e", "#6d5dfc", "#0ea5e9", "#10b981", "#e11d74", "#111114"];
 
@@ -63,6 +70,29 @@ export function WidgetEditor({ projectId, initial }: { projectId: string; initia
             <Labeled label="Subheading" className="sm:col-span-2">
               <input value={s.widgetSubtitle} maxLength={120} onChange={(e) => set("widgetSubtitle", e.target.value)} className={input} />
             </Labeled>
+            <Labeled label="Theme" className="sm:col-span-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <div role="radiogroup" aria-label="Theme" className="inline-flex rounded-xl border border-border bg-background p-1">
+                  {WIDGET_THEMES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={s.widgetTheme === t}
+                      onClick={() => set("widgetTheme", t)}
+                      className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition ${
+                        s.widgetTheme === t ? "bg-foreground text-background" : "text-muted hover:text-foreground"
+                      }`}
+                    >
+                      {THEME_LABEL[t]}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs font-normal text-muted">
+                  {s.widgetTheme === "auto" ? "Follows each visitor's light/dark system setting." : `Always ${s.widgetTheme}, whatever the visitor's system uses.`}
+                </span>
+              </div>
+            </Labeled>
             <Labeled label="Accent colour" className="sm:col-span-2">
               <div className="flex flex-wrap items-center gap-2">
                 {PRESETS.map((c) => (
@@ -72,7 +102,7 @@ export function WidgetEditor({ projectId, initial }: { projectId: string; initia
                     aria-label={`Use ${c}`}
                     aria-pressed={s.accentColor === c}
                     onClick={() => set("accentColor", c)}
-                    className="size-7 rounded-full transition hover:scale-110"
+                    className="size-7 rounded-full ring-1 ring-black/10 ring-inset transition hover:scale-110 dark:ring-white/25"
                     style={{ background: c, boxShadow: s.accentColor === c ? `0 0 0 2px var(--card), 0 0 0 4px ${c}` : undefined }}
                   />
                 ))}
@@ -291,23 +321,29 @@ function OptionsEditor({ options, onChange }: { options: string[]; onChange: (o:
 function Preview({ s }: { s: WidgetSettings }) {
   const [tab, setTab] = useState<"board" | "new">("new");
   const accent = s.accentColor;
+  // "auto" depends on each visitor; preview it in the dashboard's own scheme.
+  // Read after mount (not during render) so server and client HTML match.
+  const [systemDark, setSystemDark] = useState(false);
+  useEffect(() => setSystemDark(window.matchMedia("(prefers-color-scheme: dark)").matches), []);
+  const pal = PALETTES[s.widgetTheme === "auto" ? (systemDark ? "dark" : "light") : s.widgetTheme];
+  const vars = { "--p-bg": pal.bg, "--p-fg": pal.fg, "--p-muted": pal.muted, "--p-border": pal.border, "--p-soft": pal.soft } as React.CSSProperties;
   return (
     <div className="xl:sticky xl:top-20 xl:self-start">
       <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted">
         <span>Live preview</span>
         <span>unsaved changes included</span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-border bg-white text-[13px] text-[#111114] shadow-xl">
+      <div style={vars} className="overflow-hidden rounded-2xl border border-[var(--p-border)] bg-[var(--p-bg)] text-[13px] text-[var(--p-fg)] shadow-xl transition-colors">
         <div className="px-4 pt-4 pb-3" style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${accent} 16%, transparent), transparent 70%)` }}>
           <div className="text-[15px] font-semibold">{s.widgetTitle || "Heading"}</div>
-          {s.widgetSubtitle && <div className="mt-0.5 text-[12px] text-[#6b6b76]">{s.widgetSubtitle}</div>}
-          <div className="mt-3 grid grid-cols-2 rounded-lg bg-[#f5f4f0] p-0.5 text-[12px] font-medium">
+          {s.widgetSubtitle && <div className="mt-0.5 text-[12px] text-[var(--p-muted)]">{s.widgetSubtitle}</div>}
+          <div className="mt-3 grid grid-cols-2 rounded-lg bg-[var(--p-soft)] p-0.5 text-[12px] font-medium">
             {(["board", "new"] as const).map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => setTab(k)}
-                className={`rounded-md py-1 ${tab === k ? "bg-white shadow-sm" : "text-[#6b6b76]"}`}
+                className={`rounded-md py-1 ${tab === k ? "bg-[var(--p-bg)] shadow-sm" : "text-[var(--p-muted)]"}`}
               >
                 {k === "board" ? "Ideas" : "Suggest"}
               </button>
@@ -320,8 +356,8 @@ function Preview({ s }: { s: WidgetSettings }) {
               ["Export reports to Excel", 128],
               ["Dark mode", 71],
             ].map(([t, v]) => (
-              <div key={t} className="flex items-center gap-2.5 rounded-lg border border-[#ebe9e4] p-2.5">
-                <span className="flex w-9 flex-col items-center rounded-md border border-[#ebe9e4] py-1 text-[11px] font-semibold text-[#6b6b76]">
+              <div key={t} className="flex items-center gap-2.5 rounded-lg border border-[var(--p-border)] p-2.5">
+                <span className="flex w-9 flex-col items-center rounded-md border border-[var(--p-border)] py-1 text-[11px] font-semibold text-[var(--p-muted)]">
                   <ArrowUp /> {v}
                 </span>
                 <span className="font-semibold">{t}</span>
@@ -330,23 +366,23 @@ function Preview({ s }: { s: WidgetSettings }) {
           ) : (
             <>
               <PreviewField label={s.titleLabel || "Your idea"} required>
-                <div className="rounded-md border border-[#ebe9e4] px-2.5 py-1.5 text-[#a3a3ab]">{s.titlePlaceholder || " "}</div>
+                <div className="rounded-md border border-[var(--p-border)] px-2.5 py-1.5 text-[var(--p-muted)]">{s.titlePlaceholder || " "}</div>
               </PreviewField>
               {s.showDescription && (
                 <PreviewField label="Details">
-                  <div className="h-12 rounded-md border border-[#ebe9e4]" />
+                  <div className="h-12 rounded-md border border-[var(--p-border)]" />
                 </PreviewField>
               )}
               {s.formFields.map((f) => (
                 <PreviewField key={f.id} label={f.label || "Untitled question"} required={f.required}>
                   {f.type === "select" ? (
-                    <div className="flex justify-between rounded-md border border-[#ebe9e4] px-2.5 py-1.5 text-[#a3a3ab]">
+                    <div className="flex justify-between rounded-md border border-[var(--p-border)] px-2.5 py-1.5 text-[var(--p-muted)]">
                       {f.options?.[0] ?? "Choose…"} <span>▾</span>
                     </div>
                   ) : f.type === "textarea" ? (
-                    <div className="h-12 rounded-md border border-[#ebe9e4] px-2.5 py-1.5 text-[#a3a3ab]">{f.placeholder}</div>
+                    <div className="h-12 rounded-md border border-[var(--p-border)] px-2.5 py-1.5 text-[var(--p-muted)]">{f.placeholder}</div>
                   ) : (
-                    <div className="rounded-md border border-[#ebe9e4] px-2.5 py-1.5 text-[#a3a3ab]">{f.placeholder || " "}</div>
+                    <div className="rounded-md border border-[var(--p-border)] px-2.5 py-1.5 text-[var(--p-muted)]">{f.placeholder || " "}</div>
                   )}
                 </PreviewField>
               ))}

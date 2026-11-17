@@ -55,6 +55,8 @@ model Project {
   widgetSubtitle   String @default("Vote on ideas or suggest your own.")
   launcherText     String @default("Feedback")
   accentColor      String @default("#ff5b2e")
+  // "light" | "dark" | "auto" (auto = follow the visitor's OS setting).
+  widgetTheme      String @default("light")
   titleLabel       String @default("Your idea")
   titlePlaceholder String @default("e.g. Export reports to Excel")
   showDescription  Boolean @default(true)

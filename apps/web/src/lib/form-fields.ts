@@ -22,6 +22,10 @@ export const FIELD_TYPE_LABEL: Record<FieldType, string> = {
 
 export const MAX_FIELDS = 8;
 
+export const WIDGET_THEMES = ["light", "dark", "auto"] as const;
+export type WidgetTheme = (typeof WIDGET_THEMES)[number];
+export const parseTheme = (v: string): WidgetTheme => ((WIDGET_THEMES as readonly string[]).includes(v) ? (v as WidgetTheme) : "light");
+
 export const formFieldSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9_-]{1,40}$/i, "Invalid field id"),

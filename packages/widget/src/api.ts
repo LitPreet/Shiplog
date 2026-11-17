@@ -28,6 +28,7 @@ export type WidgetConfig = {
   subtitle: string;
   launcherText: string;
   accentColor: string;
+  theme: "light" | "dark" | "auto";
   titleLabel: string;
   titlePlaceholder: string;
   showDescription: boolean;

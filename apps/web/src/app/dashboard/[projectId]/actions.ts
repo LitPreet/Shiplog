@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireProject } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formFieldsSchema } from "@/lib/form-fields";
+import { WIDGET_THEMES, formFieldsSchema } from "@/lib/form-fields";
 import { MAX_ORIGINS } from "@/lib/limits";
 import { generatePublicKey, normalizeOrigin } from "@/lib/origins";
 import { STATUSES } from "@/lib/status";
@@ -41,6 +41,7 @@ const widgetSchema = z.object({
   widgetSubtitle: z.string().trim().max(120),
   launcherText: z.string().trim().min(1, "Button text can't be empty").max(24),
   accentColor: hex,
+  widgetTheme: z.enum(WIDGET_THEMES),
   titleLabel: z.string().trim().min(1, "Idea field label can't be empty").max(60),
   titlePlaceholder: z.string().trim().max(80),
   showDescription: z.boolean(),

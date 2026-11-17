@@ -1,5 +1,5 @@
 import { json, preflight } from "@/lib/cors";
-import { parseFormFields } from "@/lib/form-fields";
+import { parseFormFields, parseTheme } from "@/lib/form-fields";
 import { authenticateWidget } from "@/lib/widget-auth";
 
 export const OPTIONS = preflight;
@@ -22,6 +22,7 @@ export async function GET(req: Request) {
       subtitle: p.widgetSubtitle,
       launcherText: p.launcherText,
       accentColor: p.accentColor,
+      theme: parseTheme(p.widgetTheme),
       titleLabel: p.titleLabel,
       titlePlaceholder: p.titlePlaceholder,
       showDescription: p.showDescription,

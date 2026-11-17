@@ -80,7 +80,7 @@ export function App({ api, settings }: { api: Api; settings: WidgetConfig }) {
   }
 
   return (
-    <div class="sl">
+    <div class={`sl theme-${settings.theme}`}>
       {open && (
         <section class="panel" role="dialog" aria-label="Feedback">
           <header class="panel-header">
