@@ -64,6 +64,21 @@
 
 html {
   scroll-behavior: smooth;
+  /* Tell the browser we support both themes, so its own UI (autofill,
+     scrollbars, date pickers) follows dark mode instead of staying light. */
+  color-scheme: light dark;
+}
+
+/* Chrome/Safari paint autofilled inputs with their own background, which
+   ignores our theme. An inset shadow covers it with the card colour. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--foreground);
+  /* keep Tailwind's focus ring (also a box-shadow) alongside the cover */
+  box-shadow: var(--tw-ring-shadow, 0 0 #0000), 0 0 0 1000px var(--card) inset;
+  caret-color: var(--foreground);
+  transition: background-color 9999s ease-out 0s;
 }
 
 body {
