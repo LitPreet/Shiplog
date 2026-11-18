@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ArrowRight } from "@/components/icons";
 import { login, signup } from "./actions";
 
@@ -24,14 +24,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: stri
         <input name="email" type="email" autoComplete="email" required defaultValue={state?.email} placeholder="you@company.com" className={input} />
       </Field>
       <Field label="Password" hint={isSignup ? "At least 8 characters" : undefined}>
-        <input
-          name="password"
-          type="password"
-          autoComplete={isSignup ? "new-password" : "current-password"}
-          required
-          minLength={isSignup ? 8 : undefined}
-          className={input}
-        />
+        <PasswordInput isSignup={isSignup} />
       </Field>
 
       {state?.error && (
@@ -71,5 +64,66 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       </span>
       {children}
     </label>
+  );
+}
+
+// Show/hide toggle. It's a real <button type="button"> (keyboard + screen
+// reader friendly, never submits the form) with aria-pressed for its state.
+function PasswordInput({ isSignup }: { isSignup: boolean }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span className="relative">
+      <input
+        id="password"
+        name="password"
+        type={visible ? "text" : "password"}
+        autoComplete={isSignup ? "new-password" : "current-password"}
+        required
+        minLength={isSignup ? 8 : undefined}
+        className={`${input} pr-11`}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
+        aria-controls="password"
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        {visible ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </span>
+  );
+}
+
+const iconProps = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": true,
+} as const;
+
+function EyeIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.16 3.19" />
+      <path d="M6.61 6.61A17.4 17.4 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.39-1.61" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <path d="m2 2 20 20" />
+    </svg>
   );
 }
