@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { dummyPasswordHash, hashPassword, verifyPassword } from "@/lib/password";
 import { rateLimit } from "@/lib/rate-limit";
+import { safeNext } from "@/lib/safe-next";
 
 export type AuthState = { error?: string; email?: string; name?: string } | undefined;
 
@@ -23,11 +24,6 @@ const loginSchema = z.object({
   password: z.string().min(1, "Enter your password").max(200),
 });
 
-// Only allow redirects to our own pages. Without this, /login?next=https://evil.com
-// would bounce a freshly logged-in user to a phishing site ("open redirect").
-function safeNext(next: FormDataEntryValue | null) {
-  return typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-}
 
 async function ip() {
   return (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -68,9 +64,12 @@ export async function login(_prev: AuthState, form: FormData): Promise<AuthState
   }
 
   const user = await db.user.findUnique({ where: { email } });
-  // Same message for "no such user" and "wrong password": don't reveal which
-  // emails have accounts (account enumeration).
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  // Same message (and same scrypt work) for "no such user", "wrong password" and
+  // "this account uses GitHub/Google": don't reveal which emails have accounts.
+  const ok = user?.passwordHash
+    ? await verifyPassword(password, user.passwordHash)
+    : (await verifyPassword(password, await dummyPasswordHash()), false);
+  if (!user || !ok) {
     return { ...echo, error: "Incorrect email or password." };
   }
 

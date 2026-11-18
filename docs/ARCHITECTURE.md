@@ -112,6 +112,20 @@ Hand-written session auth, no library, so every step is explainable:
 | Authorization | `requireProject(id)` loads the project **only if `ownerId` = current user**, else 404 |
 | Sign out | delete the `Session` row + clear the cookie (instant revocation, unlike a JWT) |
 
+**Social sign-in** (`lib/oauth.ts`, `/api/auth/:provider` and `/callback`) uses the OAuth 2.0
+authorization code flow with a `state` cookie (against login CSRF) and PKCE S256. The code is
+exchanged server-side with the client secret. Only provider-verified emails are accepted. Linking
+rules (`decideLink`, unit-tested):
+
+| Situation | Result |
+|---|---|
+| This GitHub/Google identity is already linked | Sign in as that user |
+| A user with the same email exists | Link the identity. If that account has a password but no linked provider, the password was never proven, so it and its sessions are revoked (pre-account-takeover protection). |
+| Nobody has this email | Create a user with no password |
+
+Password login checks a dummy hash when there's no password to compare, so response time doesn't
+reveal which emails have accounts.
+
 `middleware.ts` only checks that a cookie *exists* (fast redirect to `/login`). It is not the
 security boundary: every page and every Server Action calls `requireUser`/`requireProject`, because
 Server Actions are public HTTP endpoints anyone can call.

@@ -26,3 +26,12 @@ export async function verifyPassword(password: string, stored: string): Promise<
   // through response timing.
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
+
+// For logins where there's no password to check (unknown email, or a
+// GitHub/Google-only account): verify against a throwaway hash anyway, so the
+// response takes the same time and can't reveal which emails have accounts.
+let dummy: Promise<string> | undefined;
+export function dummyPasswordHash() {
+  dummy ??= hashPassword(randomBytes(16).toString("hex"));
+  return dummy;
+}

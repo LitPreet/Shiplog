@@ -23,10 +23,27 @@ model User {
   email        String    @unique
   name         String
   // scrypt hash, format "salt:hash" (see src/lib/password.ts). Never the password.
-  passwordHash String
+  // Null for accounts that only sign in with GitHub/Google.
+  passwordHash String?
   createdAt    DateTime  @default(now())
   projects     Project[]
   sessions     Session[]
+  accounts     OAuthAccount[]
+}
+
+// A GitHub or Google identity linked to a user ("Continue with GitHub").
+// providerAccountId is the provider's stable user id, not the email (emails
+// can change; ids don't).
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String // "github" | "google"
+  providerAccountId String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 // Server-side sessions. The browser cookie holds a random token; we store only

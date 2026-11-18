@@ -8,7 +8,8 @@ owner dashboard with status changes.
 - [x] **Owner auth**: email + password, DB sessions, httpOnly cookie; projects belong to users
 - [x] Create projects + manage allowed origins from the dashboard, rotate keys, pause widget
 - [x] **Configurable widget**: heading, colour, launcher text, custom form fields (validated server-side)
-- [ ] Password reset + email verification
+- [x] **Social sign-in** (GitHub, Google) with safe account linking
+- [ ] Password reset + email verification (needs a verified sending domain)
 - [ ] **Identified users**: host app passes a signed user ID (HMAC) so votes follow real accounts
 - [x] Widget theme: light / dark / auto, chosen in the dashboard
 - [x] Unit tests (Vitest) for streaming, prompt-injection guards and privacy filtering

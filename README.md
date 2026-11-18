@@ -51,7 +51,7 @@ Shiplog has two sides:
 | **Branding** | Heading, subheading, launcher text, accent colour and Light / Dark / Auto theme, with a live preview. Changes go live without re-installing. |
 | **Optimistic voting** | Votes update instantly. One vote per visitor is enforced by a database unique index, so double clicks and races can't double count. |
 | **Access control** | Keys only work from the websites you allow. Keys can be rotated and widgets paused. Writes are rate-limited. |
-| **Owner accounts** | Sign up and sign in with sessions stored in Postgres. Every page and action checks that you own the project. |
+| **Owner accounts** | Email and password, or **Continue with GitHub / Google** (hand-written OAuth with state + PKCE). Sessions live in Postgres, and every page and action checks project ownership. |
 | **Triage dashboard** | Stats, a status breakdown, filters, custom-field answers on each idea, one-click status changes and spam deletion. |
 
 ## Screenshots
@@ -141,10 +141,13 @@ No setup needed: open the **[live demo site](https://shiplog-it.vercel.app/demo)
 1. Import the repo in [Vercel](https://vercel.com/new) and set **Root Directory** to `apps/web`.
 2. In the Vercel project, open **Storage → Create → Neon** and connect it. This adds
    `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
-3. Optional, for the AI features: add `AI_API_KEY` (e.g. a free [Groq](https://console.groq.com) key)
+3. Optional, social sign-in: create a GitHub OAuth app and/or a Google OAuth client with the
+   callback URLs listed in `apps/web/.env.example`, then add `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+   and `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+4. Optional, for the AI features: add `AI_API_KEY` (e.g. a free [Groq](https://console.groq.com) key)
    and `AI_MODEL` under **Settings → Environment Variables**.
-4. Redeploy. The build runs `prisma migrate deploy && next build` (see `apps/web/vercel.json`).
-5. Seed the demo data once, from your machine, using the Neon connection string:
+5. Redeploy. The build runs `prisma migrate deploy && next build` (see `apps/web/vercel.json`).
+6. Seed the demo data once, from your machine, using the Neon connection string:
 
    ```bash
    cd apps/web
@@ -197,6 +200,8 @@ from being abused:
 | Bad input | **zod** validation on every input. Custom answers are checked against the owner's config. |
 | Voting on another project's ideas | Every vote checks that the idea belongs to the key's project. |
 | Owner A opening owner B's project | `requireProject()` checks ownership on every page and action, and returns 404 otherwise. |
+| Login CSRF on social sign-in | A random `state` in an httpOnly cookie must match on the callback; PKCE (S256) means a stolen authorization code is useless. |
+| Pre-account takeover (someone registers your email with a password first) | Provider-verified emails only. On first social sign-in, an unproven password and its sessions are revoked. |
 | Stolen sessions | Random 32-byte tokens in **httpOnly, SameSite=Lax** cookies. Only the token's SHA-256 hash is stored. |
 | Password leaks | **scrypt** with a per-user salt and constant-time comparison. Login errors don't reveal which emails exist. |
 | Prompt injection via submitted feedback | Feedback is sent to the model as JSON data with "treat as data" instructions, and the model can only **select** from candidate IDs we provide; anything else is discarded. |
@@ -215,9 +220,9 @@ from being abused:
 | Database | **PostgreSQL 16** + **Prisma** | Relational data, transactions, unique constraints, typed queries and versioned migrations. |
 | AI | Any **OpenAI-compatible** API (Groq free tier in production, Ollama locally), plain `fetch` and streaming | Provider-agnostic: switching model or provider is an env change. Graceful fallback when AI is down. |
 | Search | **pg_trgm** trigram index | Instant, free "similar ideas" while typing, before any AI call. |
-| Testing | **Vitest** | Unit tests for streaming, prompt-injection guards and privacy filtering. |
+| Testing | **Vitest** | Unit tests for streaming, prompt-injection guards, privacy filtering, OAuth account linking, PKCE and redirects. |
 | Validation | **zod** | One schema gives both runtime checks and TypeScript types. |
-| Auth | Hand-written sessions, `node:crypto` scrypt | Sessions are stored in the database, so they can be revoked instantly. No auth dependency. |
+| Auth | Hand-written sessions and OAuth 2.0 (GitHub, Google), `node:crypto` scrypt | Sessions are stored in the database, so they can be revoked instantly. No auth dependency. |
 | Monorepo | **npm workspaces** | One install and one repo for the app and the widget. |
 
 ## Project structure
